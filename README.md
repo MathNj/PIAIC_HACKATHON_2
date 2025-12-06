@@ -1,6 +1,12 @@
 # Console TODO List Manager
 
+> **PIAIC Hackathon 2 Project** - A demonstration of Spec-Driven Development and clean Python architecture
+
 A simple yet powerful console-based TODO list application built with Python 3.13+. This application demonstrates full CRUD (Create, Read, Update, Delete) operations with an intuitive menu-driven interface.
+
+**🏆 Built for:** PIAIC (Presidential Initiative for Artificial Intelligence & Computing) Hackathon 2
+**📅 Completed:** December 2025
+**🔧 Methodology:** Specification-Driven Development (SDD)
 
 ## Features
 
@@ -18,22 +24,52 @@ A simple yet powerful console-based TODO list application built with Python 3.13
 
 **No external dependencies required!** Uses Python standard library only.
 
-## Installation
+## Quick Start
 
-### Clone the Repository
+### Step 1: Clone the Repository
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/PIAIC_HACKATHON_2.git
+git clone https://github.com/MathNj/PIAIC_HACKATHON_2.git
 cd PIAIC_HACKATHON_2
 ```
 
-### Verify Python Version
+### Step 2: Verify Python Installation
+
+Check if Python 3.13+ is installed:
 
 ```bash
 python --version
 ```
 
-Expected output: `Python 3.13.x` or later
+**Expected output:** `Python 3.13.x` or later
+
+**If Python is not installed or version is too old:**
+
+- **Windows:** Download from [python.org](https://www.python.org/downloads/)
+- **macOS:** `brew install python@3.13` or download from [python.org](https://www.python.org/downloads/)
+- **Linux:** `sudo apt install python3.13` or `sudo yum install python3.13`
+
+### Step 3: Run the Application
+
+No installation needed! Just run:
+
+**Linux/Mac:**
+```bash
+python3 src/main.py
+```
+
+**Windows:**
+```bash
+python src\main.py
+```
+
+**Alternative (if `python` command doesn't work):**
+```bash
+python3 src/main.py  # Try python3
+py src/main.py       # Or py on Windows
+```
+
+That's it! The application will start immediately with no setup or dependencies.
 
 ## Usage
 
@@ -176,6 +212,53 @@ PIAIC_HACKATHON_2/
   - Presentation Layer: Menu and handler functions
 - **Type Hints**: Full type annotations throughout
 - **Docstrings**: Google style documentation
+
+## Troubleshooting
+
+### Common Issues and Solutions
+
+#### Issue: "python: command not found"
+**Solution:**
+- Try `python3` instead of `python`
+- On Windows, try `py` command
+- Install Python 3.13+ from [python.org](https://www.python.org/downloads/)
+
+#### Issue: "No module named 'typing'"
+**Solution:** You're using Python version < 3.5. Upgrade to Python 3.13+
+
+#### Issue: "SyntaxError" when running
+**Solution:** Your Python version is too old. This app requires Python 3.13+ for modern type hints
+```bash
+python --version  # Check your version
+```
+
+#### Issue: Application freezes or doesn't respond
+**Solution:**
+- Make sure you're running in an interactive terminal
+- Don't run with input redirection (`<` operator)
+- Restart the application with `python src/main.py`
+
+#### Issue: Special characters display incorrectly
+**Solution:**
+- **Windows:** Use Windows Terminal instead of Command Prompt
+- Ensure your terminal supports UTF-8 encoding
+- On Linux/Mac, this should work by default
+
+#### Issue: Can't find src/main.py
+**Solution:** Make sure you're in the correct directory
+```bash
+pwd           # Check current directory (Linux/Mac)
+cd            # Check current directory (Windows)
+ls src/       # Verify main.py exists
+```
+
+### Getting Help
+
+If you encounter issues:
+1. Check the troubleshooting section above
+2. Verify Python version: `python --version`
+3. Make sure you're in the project root directory
+4. Check that `src/main.py` exists
 
 ## Limitations (Phase I)
 
