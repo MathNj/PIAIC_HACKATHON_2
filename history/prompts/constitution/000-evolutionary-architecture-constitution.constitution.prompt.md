@@ -1,5 +1,5 @@
 ---
-id: 002
+id: 000
 title: Evolutionary Architecture Constitution
 stage: constitution
 date: 2025-12-05
