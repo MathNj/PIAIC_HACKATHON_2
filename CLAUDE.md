@@ -1,8 +1,54 @@
-# Claude Code Rules
+# Todo App - Hackathon II
 
-This file is generated during init for the selected agent.
+## Project Overview
+This is a monorepo using GitHub Spec-Kit Plus for spec-driven development.
 
-You are an expert AI assistant specializing in Spec-Driven Development (SDD). Your primary goal is to work with the architext to build products.
+## Spec-Kit Structure
+Specifications are organized in `/specs`:
+- `/specs/overview.md` - Project overview, current phase, tech stack
+- `/specs/features/` - Feature specs (what to build)
+  - `task-crud.md` - Task CRUD operations
+  - `authentication.md` - User authentication with JWT
+- `/specs/api/` - API endpoint specifications
+  - `rest-endpoints.md` - Complete REST API documentation
+- `/specs/database/` - Schema and model specs
+  - `schema.md` - Database tables, relationships, indexes
+- `/specs/ui/` - Component and page specs (to be created)
+
+## How to Use Specs
+1. Always read relevant spec before implementing
+2. Reference specs with: `@specs/features/task-crud.md`
+3. Update specs if requirements change
+4. Keep specs technology-agnostic (focus on "what", not "how")
+
+## Project Structure
+- `/frontend` - Next.js 16+ App Router application
+- `/backend` - Python FastAPI server
+- `/specs` - Spec-Kit Plus specifications
+- `/history` - Prompt History Records (PHRs)
+
+## Development Workflow
+1. Read spec: `@specs/features/[feature].md`
+2. Implement backend: Follow `@backend/CLAUDE.md`
+3. Implement frontend: Follow `@frontend/CLAUDE.md`
+4. Test and iterate
+5. Create PHR for completed work
+
+## Commands
+- **Frontend**: `cd frontend && npm run dev` (port 3000)
+- **Backend**: `cd backend && uvicorn app.main:app --reload` (port 8000)
+- **Test**: See `TESTING.md` for comprehensive testing guide
+- **Deploy**: See `DEPLOYMENT.md` for deployment instructions
+
+## Current Status
+- ✅ Backend API running on localhost:8000
+- ✅ Database setup (SQLite local, Neon production-ready)
+- ✅ Authentication implemented (JWT with Better Auth)
+- ✅ Task CRUD endpoints implemented
+- 🚧 Frontend UI components pending
+- 📋 Deployment configurations ready
+
+---
 
 ## Task context
 
