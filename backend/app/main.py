@@ -37,10 +37,10 @@ async def lifespan(app: FastAPI):
     validate_settings()
     init_db()
 
-    # Initialize MCP server (Phase III)
-    from mcp.server import initialize_mcp_server
-    initialize_mcp_server()
-    print("MCP server initialized")
+    # Initialize MCP server (Phase III) - Disabled for Vercel deployment
+    # from mcp.server import initialize_mcp_server
+    # initialize_mcp_server()
+    # print("MCP server initialized")
 
     print("Application started successfully")
 
