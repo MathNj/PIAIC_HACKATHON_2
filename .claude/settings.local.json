@@ -28,7 +28,13 @@
       "Bash(git commit:*)",
       "Bash(git push:*)",
       "Bash(uvicorn:*)",
-      "Bash(timeout /t 3 /nobreak)"
+      "Bash(timeout /t 3 /nobreak)",
+      "Bash(vercel --version)",
+      "Bash(vercel --prod:*)",
+      "Bash(vercel ls:*)",
+      "Bash(vercel env add:*)",
+      "Bash(vercel env rm:*)",
+      "Bash(vercel inspect:*)"
     ],
     "deny": [],
     "ask": []
