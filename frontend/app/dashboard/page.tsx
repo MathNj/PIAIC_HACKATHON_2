@@ -44,6 +44,7 @@ export default function DashboardPage() {
   }, [user, filter]);
 
   const fetchTasks = async () => {
+    if (!user) return;
     try {
       setLoading(true);
       setError(null);
