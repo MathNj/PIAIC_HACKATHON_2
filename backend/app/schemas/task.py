@@ -5,7 +5,7 @@ Defines request/response models for task endpoints.
 Separates database models from API contracts for flexibility.
 """
 
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field, field_validator, ConfigDict
 from datetime import datetime
 from uuid import UUID
 from typing import Optional, Literal
@@ -27,7 +27,8 @@ class TaskCreate(TaskBase):
     Completed status defaults to False.
     Priority defaults to 'normal'.
     """
-    @validator('due_date')
+    @field_validator('due_date')
+    @classmethod
     def validate_due_date(cls, v):
         """Ensure due date is not in the past."""
         if v and v < datetime.utcnow():
@@ -61,5 +62,4 @@ class TaskRead(TaskBase):
     created_at: datetime
     updated_at: datetime
 
-    class Config:
-        orm_mode = True  # Enable ORM mode for SQLModel compatibility (Pydantic v1)
+    model_config = ConfigDict(from_attributes=True)  # Enable ORM mode for SQLModel compatibility (Pydantic v2)

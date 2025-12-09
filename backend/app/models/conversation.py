@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID
 from sqlmodel import Field, SQLModel
+from pydantic import ConfigDict
 
 
 class Conversation(SQLModel, table=True):
@@ -79,9 +80,8 @@ class Conversation(SQLModel, table=True):
         description="Last message timestamp (UTC) - updated on each message"
     )
 
-    class Config:
-        """Pydantic model configuration."""
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": 123,
                 "user_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -90,3 +90,4 @@ class Conversation(SQLModel, table=True):
                 "updated_at": "2025-12-07T11:30:00Z"
             }
         }
+    )

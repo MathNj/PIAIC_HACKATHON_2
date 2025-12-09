@@ -2,8 +2,7 @@
 Vercel serverless entrypoint for FastAPI.
 """
 
-from app.main import app as fastapi_app
+from app.main import app
 
-# Expose the FastAPI app for Vercel
-app = fastapi_app
-handler = fastapi_app
+# Export for Vercel (ASGI application)
+# Note: Only export 'app', not 'handler' for FastAPI/ASGI apps

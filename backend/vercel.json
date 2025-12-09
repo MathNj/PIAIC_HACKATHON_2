@@ -15,6 +15,7 @@
   "env": {
     "DATABASE_URL": "",
     "BETTER_AUTH_SECRET": "",
-    "FRONTEND_URL": ""
+    "FRONTEND_URL": "",
+    "GEMINI_API_KEY": ""
   }
 }

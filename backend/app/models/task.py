@@ -10,6 +10,7 @@ from typing import Optional
 from uuid import UUID
 from sqlmodel import Field, SQLModel, Index
 from enum import Enum
+from pydantic import ConfigDict
 
 
 class TaskPriority(str, Enum):
@@ -109,9 +110,8 @@ class Task(SQLModel, table=True):
         description="Last update timestamp (UTC)"
     )
 
-    class Config:
-        """Pydantic model configuration."""
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": 1,
                 "user_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -124,6 +124,7 @@ class Task(SQLModel, table=True):
                 "updated_at": "2025-12-06T12:00:00Z"
             }
         }
+    )
 
 
 # Create composite indexes for efficient filtering

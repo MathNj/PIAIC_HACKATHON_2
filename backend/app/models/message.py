@@ -8,6 +8,7 @@ Messages are append-only and form the conversation history for stateless agent e
 from datetime import datetime
 from typing import Optional, Literal
 from sqlmodel import Field, SQLModel, Index
+from pydantic import ConfigDict
 
 
 class Message(SQLModel, table=True):
@@ -92,9 +93,8 @@ class Message(SQLModel, table=True):
         description="Message creation timestamp (UTC)"
     )
 
-    class Config:
-        """Pydantic model configuration."""
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": 456,
                 "conversation_id": 123,
@@ -104,6 +104,7 @@ class Message(SQLModel, table=True):
                 "created_at": "2025-12-07T10:30:00Z"
             }
         }
+    )
 
 
 # Create composite index for efficient ordered message queries

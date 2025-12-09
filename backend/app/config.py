@@ -1,7 +1,7 @@
 """
 Application configuration management.
 
-Loads environment variables using Pydantic Settings.
+Loads environment variables using Pydantic V2.
 All sensitive configuration (DATABASE_URL, secrets) must be in environment variables.
 """
 
@@ -44,6 +44,7 @@ class Settings(BaseSettings):
     # Gemini API Key (Phase III - AI Agent)
     GEMINI_API_KEY: str = ""
 
+    # Pydantic V2 Configuration
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
@@ -69,6 +70,11 @@ def validate_settings() -> None:
         raise ValueError("BETTER_AUTH_SECRET must be at least 32 characters")
 
     print(f"[OK] Configuration loaded successfully")
-    print(f"  - Database: {settings.DATABASE_URL.split('@')[1] if '@' in settings.DATABASE_URL else 'configured'}")
+    # Safe printing of database URL (hiding credentials)
+    db_host = "configured"
+    if '@' in settings.DATABASE_URL:
+        db_host = settings.DATABASE_URL.split('@')[1]
+    
+    print(f"  - Database: {db_host}")
     print(f"  - Frontend URL: {settings.FRONTEND_URL}")
     print(f"  - Debug mode: {settings.DEBUG}")

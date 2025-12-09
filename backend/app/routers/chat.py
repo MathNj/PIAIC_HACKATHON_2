@@ -9,7 +9,7 @@ from sqlmodel import Session, select
 from uuid import UUID
 from typing import Annotated, Optional, List, Dict, Any
 from datetime import datetime
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 import json
 import logging
 
@@ -17,7 +17,7 @@ from app.database import get_session
 from app.models.conversation import Conversation
 from app.models.message import Message
 from app.auth.dependencies import get_current_user
-from agents.runner import run_chat_turn
+from agent_runner.runner import run_chat_turn
 
 logger = logging.getLogger(__name__)
 
@@ -50,13 +50,14 @@ class ChatRequest(BaseModel):
         example="Create a task to buy groceries tomorrow"
     )
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "conversation_id": 123,
                 "message": "Create a task to buy groceries tomorrow"
             }
         }
+    )
 
 
 class MessageResponse(BaseModel):
@@ -76,8 +77,8 @@ class MessageResponse(BaseModel):
     tool_calls: Optional[List[Dict[str, Any]]] = None
     created_at: datetime
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": 456,
                 "role": "assistant",
@@ -93,6 +94,7 @@ class MessageResponse(BaseModel):
                 "created_at": "2025-12-08T10:00:01Z"
             }
         }
+    )
 
 
 class ChatResponse(BaseModel):
@@ -110,8 +112,8 @@ class ChatResponse(BaseModel):
     user_message_id: int
     assistant_message_id: int
 
-    class Config:
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "conversation_id": 123,
                 "message": {
@@ -125,6 +127,7 @@ class ChatResponse(BaseModel):
                 "assistant_message_id": 456
             }
         }
+    )
 
 
 # ============================================================================

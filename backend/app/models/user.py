@@ -9,6 +9,7 @@ from datetime import datetime
 from typing import Optional
 from uuid import UUID, uuid4
 from sqlmodel import Field, SQLModel
+from pydantic import ConfigDict
 
 
 class User(SQLModel, table=True):
@@ -63,9 +64,8 @@ class User(SQLModel, table=True):
         description="Account creation timestamp (UTC)"
     )
 
-    class Config:
-        """Pydantic model configuration."""
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
                 "email": "user@example.com",
@@ -73,3 +73,4 @@ class User(SQLModel, table=True):
                 "created_at": "2025-12-06T12:00:00Z"
             }
         }
+    )
