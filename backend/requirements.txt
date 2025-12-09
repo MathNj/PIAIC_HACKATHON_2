@@ -1,6 +1,6 @@
 # FastAPI and ASGI server (compatible with pydantic v1)
-fastapi==0.95.2
-uvicorn[standard]==0.22.0
+fastapi==0.110.0
+uvicorn==0.30.0
 
 # Database (SQLModel + SQLite for local testing)
 sqlmodel==0.0.14
@@ -8,7 +8,7 @@ sqlmodel==0.0.14
 alembic==1.13.0
 
 # Data validation (using v1 which doesn't require Rust compiler)
-pydantic==2.12.5
+pydantic==1.10.15
 pydantic_settings
 
 # Authentication (JWT)
