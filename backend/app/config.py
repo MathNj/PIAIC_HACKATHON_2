@@ -11,11 +11,10 @@ from typing import Optional
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Load .env file if it exists (for local development)
-# Don't override system environment variables (important for Vercel/production)
-env_path = Path(__file__).parent.parent / ".env"
-if env_path.exists():
-    load_dotenv(dotenv_path=env_path, override=False)
+# Don't manually load .env - let Pydantic Settings handle it
+# Pydantic automatically reads from system environment variables first,
+# then from .env file (only in local dev where .env exists)
+# This ensures Vercel's system env vars take precedence
 
 
 class Settings(BaseSettings):
