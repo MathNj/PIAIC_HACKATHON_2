@@ -1,29 +1,28 @@
 # FastAPI and ASGI server (compatible with pydantic v1)
-fastapi==0.110.0
-uvicorn==0.30.0
+fastapi==0.103.1
+uvicorn==0.23.2
 
 # Database (SQLModel + SQLite for local testing)
 sqlmodel==0.0.14
-# psycopg2-binary==2.9.9  # Disabled for local SQLite testing
+psycopg2-binary==2.9.9
 alembic==1.13.0
 
-# Data validation (using v1 which doesn't require Rust compiler)
-pydantic==1.10.15
-pydantic_settings
+# Data validation (pydantic v1)
+pydantic==1.10.13
 
-# Authentication (JWT)
-python-jose[cryptography]==3.3.0
+# Authentication (JWT) — FIXED
+python-jose==3.3.0
 passlib[bcrypt]==1.7.4
 python-multipart==0.0.6
 
 # Utilities
 python-dotenv==1.0.0
 
-# AI/LLM (Phase III)
+# AI/LLM
 google-generativeai==0.8.3
-openai==1.57.2  # For OpenAI-compatible client interface
+openai==1.57.2
 
 # Testing
 pytest==7.4.3
 pytest-asyncio==0.21.1
-httpx==0.25.2  # For testing async endpoints
+httpx==0.25.2
