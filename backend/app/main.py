@@ -63,8 +63,10 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         settings.FRONTEND_URL,  # Primary frontend URL from env
-        "http://localhost:3000",  # Fallback for different port
-        "http://localhost:3001",  # Fallback for different port
+        "http://localhost:3000",  # Local development
+        "http://localhost:3001",  # Local development (alternate port)
+        "https://frontend-oabnz03d9-mathnjs-projects.vercel.app",  # Vercel production
+        "https://*.vercel.app",  # Any Vercel preview deployments
     ],
     allow_credentials=True,
     allow_methods=["*"],  # Allow all HTTP methods
