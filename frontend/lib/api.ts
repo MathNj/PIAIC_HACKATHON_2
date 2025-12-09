@@ -11,6 +11,7 @@
 import { getJWT, signOut } from "./auth";
 import type { ApiError, ValidationError } from "./types";
 
+// Production backend URL - stable domain that won't change with deployments
 const API_BASE_URL = process.env.NODE_ENV === "production"
   ? "https://backend-mathnjs-projects.vercel.app"
   : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000");
