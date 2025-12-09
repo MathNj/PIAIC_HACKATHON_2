@@ -7,12 +7,15 @@ All sensitive configuration (DATABASE_URL, secrets) must be in environment varia
 
 import os
 from pathlib import Path
+from typing import Optional
 from dotenv import load_dotenv
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Force load .env file from backend directory, override any system environment variables
+# Load .env file if it exists (for local development)
+# Don't override system environment variables (important for Vercel/production)
 env_path = Path(__file__).parent.parent / ".env"
-load_dotenv(dotenv_path=env_path, override=True)
+if env_path.exists():
+    load_dotenv(dotenv_path=env_path, override=False)
 
 
 class Settings(BaseSettings):
@@ -42,7 +45,8 @@ class Settings(BaseSettings):
     OPENAI_API_KEY: str = ""
 
     # Gemini API Key (Phase III - AI Agent)
-    GEMINI_API_KEY: str = ""
+    # Required for AI chat functionality
+    GEMINI_API_KEY: Optional[str] = None
 
     # Pydantic V2 Configuration
     model_config = SettingsConfigDict(
