@@ -1,79 +1,58 @@
 """
 Application configuration management.
 
-Loads environment variables using Pydantic V2.
+Reads environment variables directly using os.environ.
 All sensitive configuration (DATABASE_URL, secrets) must be in environment variables.
 """
 
 import os
+import sys
 from pathlib import Path
-from typing import Optional
 from dotenv import load_dotenv
-from pydantic_settings import BaseSettings, SettingsConfigDict
 
-# Load .env file for local development, but never override system environment variables
-# This ensures Vercel's environment variables are used in production
+# Load .env file for local development only
+# Don't override system environment variables (Vercel uses system env vars)
 load_dotenv(override=False)
 
 
-class Settings(BaseSettings):
+class Settings:
     """
     Application settings loaded from environment variables.
 
-    Environment variables can be set in:
-    - .env file in backend/ directory
-    - System environment variables
-    - Docker/deployment environment
+    Uses direct os.environ.get() instead of Pydantic for maximum compatibility
+    with Vercel and other deployment platforms.
     """
 
-    # Database configuration
-    # Must be provided via environment variable
-    DATABASE_URL: str = ""  # Provide default to avoid Pydantic error, validate later
+    def __init__(self):
+        # Database configuration (required)
+        self.DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
-    # Authentication secrets
-    BETTER_AUTH_SECRET: str
+        # Authentication secrets (required)
+        self.BETTER_AUTH_SECRET = os.environ.get("BETTER_AUTH_SECRET", "")
 
-    # Application settings
-    APP_NAME: str = "TODO API"
-    DEBUG: bool = False
+        # Application settings
+        self.APP_NAME = os.environ.get("APP_NAME", "TODO API")
+        self.DEBUG = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
 
-    # CORS settings (frontend URL)
-    FRONTEND_URL: str = "http://localhost:3000"
+        # CORS settings (frontend URL)
+        self.FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
-    # OpenAI API Key (Phase III)
-    OPENAI_API_KEY: str = ""
+        # OpenAI API Key (Phase III)
+        self.OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
 
-    # Gemini API Key (Phase III - AI Agent)
-    # Required for AI chat functionality
-    GEMINI_API_KEY: Optional[str] = None
+        # Gemini API Key (Phase III - AI Agent)
+        self.GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
 
-    # Pydantic V2 Configuration
-    # Note: env_file is optional - Pydantic reads from system env vars first
-    model_config = SettingsConfigDict(
-        env_file=".env",
-        env_file_encoding="utf-8",
-        case_sensitive=True,
-        extra="ignore",
-        # Ensure we validate even if .env file doesn't exist
-        validate_default=True
-    )
+        # Debug logging for Vercel deployments
+        if os.environ.get("VERCEL") or "vercel" in os.environ.get("VERCEL_URL", "").lower():
+            print(f"[CONFIG] Running on Vercel", file=sys.stderr)
+            print(f"[CONFIG] DATABASE_URL: {'SET' if self.DATABASE_URL else 'MISSING'}", file=sys.stderr)
+            print(f"[CONFIG] GEMINI_API_KEY: {'SET' if self.GEMINI_API_KEY else 'MISSING'}", file=sys.stderr)
+            print(f"[CONFIG] BETTER_AUTH_SECRET: {'SET' if self.BETTER_AUTH_SECRET else 'MISSING'}", file=sys.stderr)
 
-
-# Debug: Print environment variables for troubleshooting
-import sys
-if "vercel" in os.environ.get("VERCEL_URL", "").lower() or os.environ.get("VERCEL"):
-    print("[DEBUG] Running on Vercel", file=sys.stderr)
-    print(f"[DEBUG] DATABASE_URL in env: {'DATABASE_URL' in os.environ}", file=sys.stderr)
-    print(f"[DEBUG] GEMINI_API_KEY in env: {'GEMINI_API_KEY' in os.environ}", file=sys.stderr)
-    print(f"[DEBUG] All env vars: {list(os.environ.keys())[:20]}", file=sys.stderr)
 
 # Global settings instance
-try:
-    settings = Settings()
-    print(f"[DEBUG] Settings loaded - DATABASE_URL: {settings.DATABASE_URL[:30] if settings.DATABASE_URL else 'EMPTY'}", file=sys.stderr)
-except Exception as e:
-    print(f"[ERROR] Failed to load settings: {e}", file=sys.stderr)
-    raise
+settings = Settings()
 
 
 # Validate critical settings at startup
