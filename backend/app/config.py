@@ -27,7 +27,8 @@ class Settings(BaseSettings):
     """
 
     # Database configuration
-    DATABASE_URL: str
+    # Must be provided via environment variable
+    DATABASE_URL: str = ""  # Provide default to avoid Pydantic error, validate later
 
     # Authentication secrets
     BETTER_AUTH_SECRET: str
@@ -47,16 +48,32 @@ class Settings(BaseSettings):
     GEMINI_API_KEY: Optional[str] = None
 
     # Pydantic V2 Configuration
+    # Note: env_file is optional - Pydantic reads from system env vars first
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
         case_sensitive=True,
-        extra="ignore"
+        extra="ignore",
+        # Ensure we validate even if .env file doesn't exist
+        validate_default=True
     )
 
 
+# Debug: Print environment variables for troubleshooting
+import sys
+if "vercel" in os.environ.get("VERCEL_URL", "").lower() or os.environ.get("VERCEL"):
+    print("[DEBUG] Running on Vercel", file=sys.stderr)
+    print(f"[DEBUG] DATABASE_URL in env: {'DATABASE_URL' in os.environ}", file=sys.stderr)
+    print(f"[DEBUG] GEMINI_API_KEY in env: {'GEMINI_API_KEY' in os.environ}", file=sys.stderr)
+    print(f"[DEBUG] All env vars: {list(os.environ.keys())[:20]}", file=sys.stderr)
+
 # Global settings instance
-settings = Settings()
+try:
+    settings = Settings()
+    print(f"[DEBUG] Settings loaded - DATABASE_URL: {settings.DATABASE_URL[:30] if settings.DATABASE_URL else 'EMPTY'}", file=sys.stderr)
+except Exception as e:
+    print(f"[ERROR] Failed to load settings: {e}", file=sys.stderr)
+    raise
 
 
 # Validate critical settings at startup
