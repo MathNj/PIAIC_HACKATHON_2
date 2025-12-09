@@ -8,7 +8,8 @@ sqlmodel==0.0.14
 alembic==1.13.0
 
 # Data validation (using v1 which doesn't require Rust compiler)
-pydantic==1.10.13
+pydantic==2.12.5
+pydantic_settings
 
 # Authentication (JWT)
 python-jose[cryptography]==3.3.0
