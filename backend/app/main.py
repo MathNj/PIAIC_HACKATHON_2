@@ -65,9 +65,8 @@ app.add_middleware(
         settings.FRONTEND_URL,  # Primary frontend URL from env
         "http://localhost:3000",  # Local development
         "http://localhost:3001",  # Local development (alternate port)
-        "https://frontend-oabnz03d9-mathnjs-projects.vercel.app",  # Vercel production
-        "https://*.vercel.app",  # Any Vercel preview deployments
     ],
+    allow_origin_regex=r"https://.*\.vercel\.app",  # All Vercel deployments (production & preview)
     allow_credentials=True,
     allow_methods=["*"],  # Allow all HTTP methods
     allow_headers=["*"],  # Allow all headers (including Authorization)
