@@ -58,6 +58,8 @@ def init_db() -> None:
     # Import models to register them with SQLModel
     from app.models.user import User
     from app.models.task import Task
+    from app.models.conversation import Conversation
+    from app.models.message import Message
 
     try:
         # Create all tables (only works with SQLite for local testing)

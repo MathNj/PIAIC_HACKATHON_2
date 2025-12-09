@@ -213,11 +213,11 @@ class TestJWTAuthentication:
         assert response.status_code == 200
 
     def test_protected_endpoint_without_token(self, client: TestClient, test_user: User):
-        """Test accessing protected endpoint without JWT returns 403."""
+        """Test accessing protected endpoint without JWT returns 401."""
         response = client.get(f"/api/{test_user.id}/tasks")
 
-        # Should fail with 403 Forbidden (no auth header provided)
-        assert response.status_code == 403
+        # Should fail with 401 Unauthorized (no auth header provided)
+        assert response.status_code == 401
 
     def test_protected_endpoint_with_invalid_token(
         self, client: TestClient, test_user: User

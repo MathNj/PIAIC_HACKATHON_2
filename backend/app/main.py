@@ -16,6 +16,7 @@ from app.config import settings, validate_settings
 from app.database import init_db
 from app.routers import tasks_router
 from app.routers.auth import router as auth_router
+from app.routers.chat import router as chat_router
 
 
 @asynccontextmanager
@@ -26,6 +27,7 @@ async def lifespan(app: FastAPI):
     Startup:
         - Validate configuration
         - Initialize database connection
+        - Initialize MCP server for Phase III AI Chat Agent
 
     Shutdown:
         - Clean up resources
@@ -34,6 +36,12 @@ async def lifespan(app: FastAPI):
     print("Starting TODO API...")
     validate_settings()
     init_db()
+
+    # Initialize MCP server (Phase III)
+    from mcp.server import initialize_mcp_server
+    initialize_mcp_server()
+    print("MCP server initialized")
+
     print("Application started successfully")
 
     yield
@@ -53,7 +61,11 @@ app = FastAPI(
 # Configure CORS for frontend communication
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_URL],  # Frontend URL from env
+    allow_origins=[
+        settings.FRONTEND_URL,  # Primary frontend URL from env
+        "http://localhost:3000",  # Fallback for different port
+        "http://localhost:3001",  # Fallback for different port
+    ],
     allow_credentials=True,
     allow_methods=["*"],  # Allow all HTTP methods
     allow_headers=["*"],  # Allow all headers (including Authorization)
@@ -81,3 +93,4 @@ async def health_check():
 # Router registration
 app.include_router(auth_router)  # Auth endpoints (no JWT required)
 app.include_router(tasks_router)  # Task endpoints (JWT required)
+app.include_router(chat_router)  # Chat endpoints (JWT required) - Phase III

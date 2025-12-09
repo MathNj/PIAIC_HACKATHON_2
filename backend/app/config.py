@@ -5,7 +5,7 @@ Loads environment variables using Pydantic Settings.
 All sensitive configuration (DATABASE_URL, secrets) must be in environment variables.
 """
 
-from pydantic import BaseSettings
+from pydantic_settings import BaseSettings
 
 
 class Settings(BaseSettings):
@@ -30,6 +30,9 @@ class Settings(BaseSettings):
 
     # CORS settings (frontend URL)
     FRONTEND_URL: str = "http://localhost:3000"
+
+    # OpenAI API Key (Phase III)
+    OPENAI_API_KEY: str = ""
 
     class Config:
         env_file = ".env"
