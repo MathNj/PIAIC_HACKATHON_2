@@ -429,10 +429,9 @@ async def chat(
     logger.info(f"[Chat API] Executing agent for conversation {conversation.id}")
 
     try:
-        # Get JWT token from request headers (for MCP tool authentication)
-        # Note: In a real implementation, we'd extract this from the Authorization header
-        # For now, we'll pass None and let the agent use user_id directly
-        user_token = None  # TODO: Extract from Authorization header in production
+        # For Phase III, we use user_id directly for M CP tools instead of JWT token
+        # Setting user_token=None will trigger the fallback in runner.py to use user_id
+        user_token = None
 
         agent_result = await run_chat_turn(
             user_id=str(user_id),

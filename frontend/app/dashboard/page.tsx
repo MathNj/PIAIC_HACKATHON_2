@@ -124,7 +124,16 @@ export default function DashboardPage() {
     return tasks.filter(task => !task.completed && task.priority !== "high" && (!task.due_date || new Date(task.due_date) >= now)).length;
   }, [tasks]);
 
-  const filteredTasks = tasks.filter(task => priorityFilter === "all" || task.priority === priorityFilter);
+  const filteredTasks = tasks.filter(task => {
+    // Filter by completion status
+    if (filter === "pending" && task.completed) return false;
+    if (filter === "completed" && !task.completed) return false;
+
+    // Filter by priority
+    if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
+
+    return true;
+  });
 
   if (!user) {
     return (
@@ -364,6 +373,12 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }: { task: Task, on
               </div>
             </div>
             <div className="flex flex-row gap-2 mt-2 md:mt-0">
+              <button
+                onClick={() => onToggleComplete(task)}
+                className={`btn-secondary text-xs px-3 py-1.5 ${task.completed ? "!border-yellow-600/50 hover:!bg-yellow-600/30 text-yellow-300" : "!border-green-600/50 hover:!bg-green-600/30 text-green-300"}`}
+              >
+                {task.completed ? "Mark Incomplete" : "Mark Complete"}
+              </button>
               <button onClick={() => onEdit(task)} className="btn-secondary text-xs px-3 py-1.5">Edit</button>
               <button onClick={() => { if (confirm("Are you sure?")) onDelete(task.id); }} className="btn-secondary text-xs px-3 py-1.5 !border-red-800/50 hover:!bg-red-800/50 text-red-300">Delete</button>
             </div>

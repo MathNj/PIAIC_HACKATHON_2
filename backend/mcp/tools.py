@@ -62,8 +62,12 @@ def validate_jwt_token(token: str) -> UUID:
     """
     Validate JWT token and extract user_id.
 
+    Supports two formats:
+    1. JWT token: Standard JWT with user_id in payload
+    2. Direct user_id: Format "user_id:<uuid>" for development/testing
+
     Args:
-        token: JWT token string from Authorization header
+        token: JWT token string OR "user_id:<uuid>" format
 
     Returns:
         UUID: Authenticated user's UUID
@@ -71,6 +75,15 @@ def validate_jwt_token(token: str) -> UUID:
     Raises:
         AuthenticationError: If token is invalid, expired, or missing user_id
     """
+    # Handle direct user_id format (development/testing)
+    if token.startswith("user_id:"):
+        user_id_str = token[8:]  # Strip "user_id:" prefix
+        try:
+            return UUID(user_id_str)
+        except ValueError:
+            raise AuthenticationError(f"Invalid user_id format: {user_id_str}")
+
+    # Handle JWT token format
     try:
         # Decode and validate JWT token
         payload = jwt.decode(

@@ -15,10 +15,10 @@ from typing import List, Dict, Any, Optional
 from datetime import datetime
 import logging
 import json
-import os
 
 from openai import AsyncOpenAI
 
+from app.config import settings  # Import settings instead of using os.getenv
 from mcp.server import get_mcp_server
 from mcp.tools import (
     list_tasks,
@@ -54,8 +54,10 @@ class ToolExecutionError(AgentRunnerError):
 # System prompt for the task management agent
 SYSTEM_PROMPT = """You are a helpful task management assistant. You help users manage their TODO tasks through natural language conversation.
 
+IMPORTANT: You are already authenticated. The user is logged in and you can directly call all tools without asking for authentication or tokens. Never ask the user for tokens or credentials.
+
 You have access to the following tools:
-- list_tasks: List all tasks with optional status filtering
+- list_tasks: List all tasks with optional status filtering (no parameters needed - you're already authenticated)
 - create_task: Create a new task with title, description, priority, and due date
 - update_task: Update an existing task's properties
 - delete_task: Delete a task by ID
@@ -65,10 +67,10 @@ When users ask you to create tasks:
 1. Extract the task title from their message
 2. Infer priority from urgency keywords (urgent/asap/critical → high, maybe/someday → low, default → normal)
 3. Parse temporal expressions for due dates (tomorrow, next week, Monday, etc.)
-4. Create the task using the create_task tool
+4. Directly call create_task tool - you don't need to ask for authentication
 
 When users ask about their tasks:
-1. Use list_tasks to fetch their current tasks
+1. Directly call list_tasks to fetch their current tasks (no authentication needed)
 2. Provide a clear summary organized by priority or due date
 3. Highlight overdue tasks or high-priority items
 
@@ -80,7 +82,7 @@ When users ask to complete or delete tasks:
 1. Use toggle_task_completion or delete_task as appropriate
 2. Confirm the action taken
 
-Always be concise, helpful, and proactive in managing tasks efficiently.
+Always be concise, helpful, and proactive in managing tasks efficiently. Never ask users for authentication - you're already authorized to perform all operations.
 """
 
 
@@ -151,7 +153,7 @@ async def run_chat_turn(
     logger.info(f"[Agent Runner] Starting chat turn for user {user_id}, message: {message[:50]}...")
 
     # 1. Initialize AsyncOpenAI Client for Gemini API
-    api_key = os.getenv("GEMINI_API_KEY")
+    api_key = settings.GEMINI_API_KEY
     if not api_key:
         raise AgentRunnerError("GEMINI_API_KEY environment variable not set")
 
@@ -159,7 +161,7 @@ async def run_chat_turn(
         api_key=api_key,
         base_url="https://generativelanguage.googleapis.com/v1beta/openai/"
     )
-    model = "gemini-2.5-flash"  # Using Gemini 2.5 Flash (not deprecated versions)
+    model = "models/gemini-2.5-flash"  # Using Gemini 2.5 Flash (requires models/ prefix)
 
     # 2. Get MCP tools and convert to OpenAI tool format
     mcp_server = get_mcp_server()
@@ -228,7 +230,7 @@ async def run_chat_turn(
                     logger.info(f"[Agent Runner] Executing tool: {tool_name}")
 
                     # Execute tool and capture result
-                    tool_result = _execute_tool(
+                    tool_result = await _execute_tool(
                         tool_name=tool_name,
                         arguments=tool_args_str,
                         user_token=user_token,
@@ -236,21 +238,27 @@ async def run_chat_turn(
                     )
 
                     # Add tool result to audit trail
+                    logger.info(f"[Agent Runner] Tool result type: {type(tool_result)}, keys: {tool_result.keys() if isinstance(tool_result, dict) else 'N/A'}")
                     tool_call_audit.append({
                         "tool": tool_name,
                         "arguments": json.loads(tool_args_str),
-                        "result": tool_result["result"],
-                        "success": tool_result["success"],
+                        "result": tool_result.get("result") if isinstance(tool_result, dict) else tool_result,
+                        "success": tool_result.get("success", True) if isinstance(tool_result, dict) else True,
                         "error": tool_result.get("error"),
                         "timestamp": datetime.utcnow().isoformat() + "Z"
                     })
 
                     # Add tool result to conversation for LLM
+                    if isinstance(tool_result, dict) and "success" in tool_result:
+                        content = json.dumps(tool_result.get("result")) if tool_result["success"] else tool_result.get("error", "Unknown error")
+                    else:
+                        content = json.dumps(tool_result)
+
                     messages.append({
                         "role": "tool",
                         "tool_call_id": tool_call_id,
                         "name": tool_name,
-                        "content": json.dumps(tool_result["result"]) if tool_result["success"] else tool_result["error"]
+                        "content": content
                     })
 
                     tool_call_count += 1
@@ -311,12 +319,20 @@ def _convert_mcp_tools_to_openai_format(mcp_schemas: List[Dict[str, Any]]) -> Li
     openai_tools = []
 
     for mcp_schema in mcp_schemas:
+        # Remove user_token from parameters - it's automatically added by the runner
+        parameters = mcp_schema["parameters"].copy()
+        if "properties" in parameters and "user_token" in parameters["properties"]:
+            parameters = parameters.copy()
+            parameters["properties"] = {k: v for k, v in parameters["properties"].items() if k != "user_token"}
+            if "required" in parameters and "user_token" in parameters["required"]:
+                parameters["required"] = [r for r in parameters["required"] if r != "user_token"]
+
         openai_tool = {
             "type": "function",
             "function": {
                 "name": mcp_schema["name"],
                 "description": mcp_schema["description"],
-                "parameters": mcp_schema["parameters"]
+                "parameters": parameters
             }
         }
         openai_tools.append(openai_tool)
@@ -324,7 +340,7 @@ def _convert_mcp_tools_to_openai_format(mcp_schemas: List[Dict[str, Any]]) -> Li
     return openai_tools
 
 
-def _execute_tool(
+async def _execute_tool(
     tool_name: str,
     arguments: str,
     user_token: Optional[str],
@@ -359,9 +375,9 @@ def _execute_tool(
         if "user_token" not in args and user_token:
             args["user_token"] = user_token
         elif "user_token" not in args:
-            # Fallback: use user_id directly (less secure, for development)
-            logger.warning(f"[Tool Execution] No user_token provided, using user_id directly")
-            args["user_id"] = user_id
+            # Fallback: use user_id as user_token (MCP tools will handle it)
+            logger.warning(f"[Tool Execution] No user_token provided, using user_id as token")
+            args["user_token"] = f"user_id:{user_id}"  # Prefix to indicate this is a user_id, not a JWT
 
         # Get tool function from MCP server
         mcp_server = get_mcp_server()

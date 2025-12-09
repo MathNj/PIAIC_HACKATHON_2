@@ -5,7 +5,14 @@ Loads environment variables using Pydantic Settings.
 All sensitive configuration (DATABASE_URL, secrets) must be in environment variables.
 """
 
-from pydantic_settings import BaseSettings
+import os
+from pathlib import Path
+from dotenv import load_dotenv
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+# Force load .env file from backend directory, override any system environment variables
+env_path = Path(__file__).parent.parent / ".env"
+load_dotenv(dotenv_path=env_path, override=True)
 
 
 class Settings(BaseSettings):
@@ -34,10 +41,15 @@ class Settings(BaseSettings):
     # OpenAI API Key (Phase III)
     OPENAI_API_KEY: str = ""
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
+    # Gemini API Key (Phase III - AI Agent)
+    GEMINI_API_KEY: str = ""
+
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        case_sensitive=True,
+        extra="ignore"
+    )
 
 
 # Global settings instance

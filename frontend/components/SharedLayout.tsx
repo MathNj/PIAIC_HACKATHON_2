@@ -47,7 +47,7 @@ export default function SharedLayout({
                   href="/signup"
                   className="btn-primary hover-scale text-sm"
                 >
-                  Get Started
+                  Sign Up
                 </Link>
               </>
             )}
@@ -71,30 +71,32 @@ export default function SharedLayout({
       {children}
 
       {/* Footer - Only shows on public pages now */}
-      <footer className="relative z-10 border-t border-gray-200 bg-white/50 backdrop-blur-sm">
+      <footer className="relative z-10 bg-gradient-to-br from-gray-900 via-slate-900 to-gray-950 border-t border-white/10">
         <div className="max-w-7xl mx-auto px-6 py-12">
           <div className="grid md:grid-cols-4 gap-8 mb-8">
             <div>
               <div className="flex items-center gap-2 mb-4">
-                <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg"></div>
+                <div className="w-8 h-8 bg-gradient-to-br from-indigo-600 to-purple-600 rounded-lg animate-glow"></div>
                 <span className="text-xl font-bold gradient-text">TaskFlow</span>
               </div>
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-400">
                 AI-powered task management for modern teams.
               </p>
             </div>
             {/* ... rest of footer links ... */}
             <div>
-              <h4 className="font-semibold text-gray-900 mb-4">Product</h4>
-              <ul className="space-y-2 text-sm text-gray-600">
-                <li><a href="#" className="hover:text-indigo-600 transition-colors">Features</a></li>
-                <li><a href="#" className="hover:text-indigo-600 transition-colors">Pricing</a></li>
+              <h4 className="font-semibold text-white mb-4">Product</h4>
+              <ul className="space-y-2 text-sm text-gray-400">
+                <li><a href="#" className="hover:text-indigo-400 transition-colors">Features</a></li>
+                <li><a href="#" className="hover:text-indigo-400 transition-colors">Pricing</a></li>
               </ul>
             </div>
             {/* ... shortened for brevity, keep your original footer columns here ... */}
           </div>
-          <div className="pt-8 border-t border-gray-200 text-center text-sm text-gray-600">
-            <p>&copy; 2025 TaskFlow. Built with ❤️ for Hackathon II.</p>
+          <div className="pt-8 border-t border-white/10 text-center">
+            <p className="text-sm bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 bg-clip-text text-transparent font-semibold">
+              &copy; 2025 TaskFlow. Built with ❤️ for Hackathon II.
+            </p>
           </div>
         </div>
       </footer>
