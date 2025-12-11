@@ -17,6 +17,8 @@ from app.database import init_db
 from app.routers import tasks_router
 from app.routers.auth import router as auth_router
 from app.routers.chat import router as chat_router
+from app.routers.priorities import router as priorities_router
+from app.routers.tags import router as tags_router
 
 
 @asynccontextmanager
@@ -58,16 +60,11 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS for frontend communication
+# Configure CORS for frontend communication - Allow all origins
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        settings.FRONTEND_URL,  # Primary frontend URL from env
-        "http://localhost:3000",  # Local development
-        "http://localhost:3001",  # Local development (alternate port)
-    ],
-    allow_origin_regex=r"https://.*\.vercel\.app",  # All Vercel deployments (production & preview)
-    allow_credentials=True,
+    allow_origins=["*"],  # Allow all origins (localhost to internet)
+    allow_credentials=False,  # Must be False when allow_origins is ["*"]
     allow_methods=["*"],  # Allow all HTTP methods
     allow_headers=["*"],  # Allow all headers (including Authorization)
 )
@@ -94,4 +91,6 @@ async def health_check():
 # Router registration
 app.include_router(auth_router)  # Auth endpoints (no JWT required)
 app.include_router(tasks_router)  # Task endpoints (JWT required)
+app.include_router(priorities_router)  # Priority lookup (no JWT required)
+app.include_router(tags_router)  # Tag management (no JWT required)
 app.include_router(chat_router)  # Chat endpoints (JWT required) - Phase III

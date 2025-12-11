@@ -82,19 +82,36 @@ class Task(SQLModel, table=True):
         description="Task completion status"
     )
 
-    # Priority
-    priority: str = Field(
-        default=TaskPriority.NORMAL.value,
-        nullable=False,
+    # Priority (V2: foreign key to priorities table)
+    priority_id: Optional[int] = Field(
+        default=None,
+        foreign_key="priorities.id",
+        nullable=True,
         index=True,
-        description="Task priority (low, normal, high)"
+        description="Foreign key to priorities table (nullable)"
     )
 
     # Due date
     due_date: Optional[datetime] = Field(
         default=None,
         nullable=True,
+        index=True,
         description="Optional due date for the task (UTC)"
+    )
+
+    # Recurring task fields (V2)
+    is_recurring: bool = Field(
+        default=False,
+        nullable=False,
+        index=True,
+        description="Whether task regenerates on completion"
+    )
+
+    recurrence_pattern: Optional[str] = Field(
+        default=None,
+        nullable=True,
+        max_length=20,
+        description="Recurrence frequency: 'daily', 'weekly', 'monthly', 'yearly'"
     )
 
     # Timestamps
