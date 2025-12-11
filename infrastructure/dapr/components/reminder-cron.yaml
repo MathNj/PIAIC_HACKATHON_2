@@ -1,0 +1,23 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: reminder-cron
+spec:
+  type: bindings.cron
+  version: v1
+  metadata:
+  # Cron schedule expression (every 5 minutes)
+  # Format: "second minute hour day-of-month month day-of-week"
+  # Example: "0 */5 * * * *" = every 5 minutes at :00 seconds
+  - name: schedule
+    value: "0 */5 * * * *"
+
+  # Direction: input (trigger), output (emit), or both
+  # For cron bindings, typically "input" to trigger on schedule
+  - name: direction
+    value: "input"
+
+# Scopes define which apps can use this component
+# Only the notification service should receive cron triggers
+scopes:
+- notification-service

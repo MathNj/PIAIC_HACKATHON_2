@@ -1,0 +1,86 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  # Redis connection string (Minikube-compatible)
+  - name: redisHost
+    value: "redis-service:6379"
+
+  # Redis password (empty for local development)
+  - name: redisPassword
+    value: ""
+
+  # Database number (0-15, default: 0)
+  - name: redisDB
+    value: "0"
+
+  # Connection timeout
+  - name: dialTimeout
+    value: "5s"
+
+  # Read timeout
+  - name: readTimeout
+    value: "3s"
+
+  # Write timeout
+  - name: writeTimeout
+    value: "3s"
+
+  # Max number of retries
+  - name: maxRetries
+    value: "3"
+
+  # Min retry backoff
+  - name: minRetryBackoff
+    value: "8ms"
+
+  # Max retry backoff
+  - name: maxRetryBackoff
+    value: "512ms"
+
+  # Enable TLS (false for local development)
+  - name: enableTLS
+    value: "false"
+
+  # Max connection pool size
+  - name: poolSize
+    value: "20"
+
+  # Min idle connections
+  - name: minIdleConns
+    value: "5"
+
+  # Connection age before closing
+  - name: maxConnAge
+    value: "0"  # 0 = no age limit
+
+  # Pool timeout (time to wait for connection from pool)
+  - name: poolTimeout
+    value: "4s"
+
+  # Idle timeout (time before idle connection is closed)
+  - name: idleTimeout
+    value: "5m"
+
+  # Idle check frequency
+  - name: idleCheckFrequency
+    value: "1m"
+
+  # Key prefix for state entries (useful for multi-tenancy)
+  - name: keyPrefix
+    value: "todo-app"
+
+  # TTL in seconds for state entries (0 = no expiry)
+  # Useful for reminder tracking - clean up after 1 hour
+  - name: ttlInSeconds
+    value: "3600"
+
+# Scopes define which apps can use this component
+scopes:
+- backend-service
+- notification-service
+- recurring-task-service

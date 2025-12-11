@@ -15,6 +15,7 @@ from app.models.task import Task
 from app.models.task_tag import TaskTag
 from app.schemas.task import TaskRead, TaskCreate, TaskUpdate
 from app.auth.dependencies import get_current_user
+from app.dapr.client import dapr_client
 
 router = APIRouter(prefix="/api", tags=["Tasks"])
 
@@ -262,6 +263,33 @@ async def create_task(
             session.add(task_tag)
 
         session.commit()
+
+        # Publish task_created event to Dapr pub/sub
+        try:
+            event_data = {
+                "event_type": "task_created",
+                "task_id": new_task.id,
+                "user_id": str(new_task.user_id),
+                "title": new_task.title,
+                "description": new_task.description,
+                "completed": new_task.completed,
+                "priority_id": new_task.priority_id,
+                "due_date": new_task.due_date.isoformat() if new_task.due_date else None,
+                "is_recurring": new_task.is_recurring,
+                "recurrence_pattern": new_task.recurrence_pattern,
+                "tag_ids": task_data.tag_ids,
+                "created_at": new_task.created_at.isoformat(),
+                "updated_at": new_task.updated_at.isoformat()
+            }
+
+            dapr_client.publish_event(
+                pubsub_name="kafka-pubsub",
+                topic_name="task-events",
+                data=event_data
+            )
+        except Exception as pub_error:
+            # Log the error but don't fail the request - event publishing is non-critical
+            print(f"Warning: Failed to publish task_created event: {str(pub_error)}")
 
         # Convert to response schema with string user_id
         return TaskRead(
