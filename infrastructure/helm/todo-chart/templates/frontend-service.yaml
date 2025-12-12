@@ -1,0 +1,23 @@
+{{- if .Values.frontend.enabled }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: frontend-service
+  labels:
+    {{- include "todo-chart.frontendLabels" . | nindent 4 }}
+  annotations:
+    {{- include "todo-chart.aiOpsAnnotations" . | nindent 4 }}
+spec:
+  type: {{ .Values.frontend.service.type }}
+  ports:
+  - name: http
+    port: {{ .Values.frontend.service.port }}
+    targetPort: {{ .Values.frontend.service.targetPort }}
+    {{- if eq .Values.frontend.service.type "NodePort" }}
+    nodePort: {{ .Values.frontend.service.nodePort }}
+    {{- end }}
+    protocol: TCP
+  selector:
+    {{- include "todo-chart.selectorLabels" . | nindent 4 }}
+    tier: frontend
+{{- end }}

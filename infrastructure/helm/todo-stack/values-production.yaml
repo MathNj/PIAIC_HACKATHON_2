@@ -1,0 +1,45 @@
+global:
+  environment: production
+
+backend:
+  replicaCount: 3
+  image:
+    repository: registry.digitalocean.com/todo/backend
+    tag: v1.0.0
+    pullPolicy: Always
+  resources:
+    requests:
+      cpu: 1000m
+      memory: 1024Mi
+    limits:
+      cpu: 2000m
+      memory: 2048Mi
+
+frontend:
+  replicaCount: 2
+  image:
+    repository: registry.digitalocean.com/todo/frontend
+    tag: v1.0.0
+    pullPolicy: Always
+  service:
+    type: LoadBalancer
+  resources:
+    requests:
+      cpu: 500m
+      memory: 512Mi
+    limits:
+      cpu: 1000m
+      memory: 1024Mi
+
+ingress:
+  enabled: true
+  className: nginx
+  hosts:
+    - host: todo.yourdomain.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls:
+    - secretName: todo-tls
+      hosts:
+        - todo.yourdomain.com

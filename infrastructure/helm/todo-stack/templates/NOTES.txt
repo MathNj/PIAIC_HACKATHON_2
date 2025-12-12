@@ -1,0 +1,99 @@
+Thank you for installing {{ .Chart.Name }}!
+
+Your Todo Chatbot (Phase IV) has been deployed to Kubernetes.
+
+Release Name: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+Environment: {{ .Values.global.environment }}
+
+================================================================================
+ACCESS INFORMATION
+================================================================================
+
+{{- if eq .Values.frontend.service.type "NodePort" }}
+Frontend URL: http://localhost:{{ .Values.frontend.service.nodePort }}
+
+Note: If using Minikube, you may need to use:
+  minikube service frontend-service --url
+
+{{- else if eq .Values.frontend.service.type "LoadBalancer" }}
+Frontend: Run the following command to get the EXTERNAL-IP:
+  kubectl get svc frontend-service -n {{ .Release.Namespace }}
+
+Then access: http://<EXTERNAL-IP>:{{ .Values.frontend.service.port }}
+
+{{- else if eq .Values.frontend.service.type "ClusterIP" }}
+Frontend (ClusterIP - internal only):
+  kubectl port-forward svc/frontend-service {{ .Values.frontend.service.port }}:{{ .Values.frontend.service.port }} -n {{ .Release.Namespace }}
+
+Then access: http://localhost:{{ .Values.frontend.service.port }}
+
+{{- end }}
+
+Backend API: http://backend-service:{{ .Values.backend.service.port }} (internal)
+
+================================================================================
+DEPLOYMENT STATUS
+================================================================================
+
+Check pod status:
+  kubectl get pods -l app={{ .Values.global.labels.app }} -n {{ .Release.Namespace }}
+
+Check service status:
+  kubectl get services -l app={{ .Values.global.labels.app }} -n {{ .Release.Namespace }}
+
+Check deployment status:
+  kubectl get deployments -l app={{ .Values.global.labels.app }} -n {{ .Release.Namespace }}
+
+Backend Replicas: {{ .Values.backend.replicaCount }}
+Frontend Replicas: {{ .Values.frontend.replicaCount }}
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+View backend logs:
+  kubectl logs -l app={{ .Values.global.labels.app }},tier=backend -f -n {{ .Release.Namespace }}
+
+View frontend logs:
+  kubectl logs -l app={{ .Values.global.labels.app }},tier=frontend -f -n {{ .Release.Namespace }}
+
+Describe backend pods:
+  kubectl describe pods -l tier=backend -n {{ .Release.Namespace }}
+
+Describe frontend pods:
+  kubectl describe pods -l tier=frontend -n {{ .Release.Namespace }}
+
+Check events:
+  kubectl get events -n {{ .Release.Namespace }} --sort-by='.lastTimestamp'
+
+================================================================================
+UPGRADE & UNINSTALL
+================================================================================
+
+Upgrade the deployment:
+  helm upgrade {{ .Release.Name }} . -f values-{{ .Values.global.environment }}.yaml -n {{ .Release.Namespace }}
+
+Upgrade with custom values:
+  helm upgrade {{ .Release.Name }} . --set backend.replicaCount=3 -n {{ .Release.Namespace }}
+
+Uninstall:
+  helm uninstall {{ .Release.Name }} -n {{ .Release.Namespace }}
+
+================================================================================
+IMPORTANT NOTES
+================================================================================
+
+{{- if not .Values.secrets.create }}
+⚠️  SECRET REQUIRED: This chart expects a Kubernetes secret named '{{ .Values.secrets.name }}'.
+   Create it manually before deploying:
+
+   kubectl create secret generic {{ .Values.secrets.name }} \
+     --from-literal=DATABASE_URL='your-database-url' \
+     --from-literal=OPENAI_API_KEY='your-openai-key' \
+     --from-literal=BETTER_AUTH_SECRET='your-auth-secret' \
+     -n {{ .Release.Namespace }}
+
+{{- end }}
+
+For more information, visit the project documentation.

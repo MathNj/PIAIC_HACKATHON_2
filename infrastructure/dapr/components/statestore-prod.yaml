@@ -1,0 +1,107 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: default
+  labels:
+    app: todo-app
+    component: state
+    environment: production
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  # ========================================
+  # Connection - DigitalOcean Managed Redis (injected from Secret)
+  # ========================================
+  - name: redisHost
+    secretKeyRef:
+      name: redis-credentials
+      key: redis-host
+
+  - name: redisPassword
+    secretKeyRef:
+      name: redis-credentials
+      key: redis-password
+
+  - name: redisDB
+    value: "0"  # Database number (0-15)
+
+  # ========================================
+  # TLS Configuration (Required for DO Managed Redis)
+  # ========================================
+  - name: enableTLS
+    value: "true"
+
+  # DO Managed Redis uses port 25061 for TLS connections
+  # The redisHost secret should include the port: <host>:25061
+
+  # ========================================
+  # Connection Timeouts
+  # ========================================
+  - name: dialTimeout
+    value: "5s"
+
+  - name: readTimeout
+    value: "3s"
+
+  - name: writeTimeout
+    value: "3s"
+
+  # ========================================
+  # Retry Configuration
+  # ========================================
+  - name: maxRetries
+    value: "3"
+
+  - name: minRetryBackoff
+    value: "8"
+
+  - name: maxRetryBackoff
+    value: "512"
+
+  # ========================================
+  # Connection Pooling
+  # ========================================
+  - name: poolSize
+    value: "20"  # Max connections in pool
+
+  - name: minIdleConns
+    value: "5"  # Min idle connections to maintain
+
+  - name: maxConnAge
+    value: "0"  # 0 = no age limit
+
+  - name: poolTimeout
+    value: "4s"  # Time to wait for connection from pool
+
+  - name: idleTimeout
+    value: "5m"  # Time before idle connection is closed
+
+  - name: idleCheckFrequency
+    value: "1m"  # How often to check for idle connections
+
+  # ========================================
+  # Key Management
+  # ========================================
+  - name: keyPrefix
+    value: "todo-app"  # Prefix for all keys (multi-tenancy)
+
+  # TTL for state entries (3600 = 1 hour)
+  # Useful for conversation state - auto-cleanup after 1 hour of inactivity
+  - name: ttlInSeconds
+    value: "3600"
+
+  # ========================================
+  # Performance Tuning
+  # ========================================
+  - name: enablePipelining
+    value: "true"  # Send multiple commands in batch
+
+# ========================================
+# Scopes - Which apps can use this component
+# ========================================
+scopes:
+- backend-service
+- notification-service
+- recurring-task-service
