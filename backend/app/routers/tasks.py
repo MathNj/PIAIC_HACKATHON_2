@@ -490,6 +490,33 @@ async def update_task(
         tag_statement = select(TaskTag.tag_id).where(TaskTag.task_id == task.id)
         task_tag_ids = session.exec(tag_statement).all()
 
+        # Publish task_updated event to Dapr pub/sub
+        try:
+            event_data = {
+                "event_type": "task_updated",
+                "task_id": task.id,
+                "user_id": str(task.user_id),
+                "title": task.title,
+                "description": task.description,
+                "completed": task.completed,
+                "priority_id": task.priority_id,
+                "due_date": task.due_date.isoformat() if task.due_date else None,
+                "is_recurring": task.is_recurring,
+                "recurrence_pattern": task.recurrence_pattern,
+                "tag_ids": list(task_tag_ids),
+                "created_at": task.created_at.isoformat(),
+                "updated_at": task.updated_at.isoformat()
+            }
+
+            dapr_client.publish_event(
+                pubsub_name="kafka-pubsub",
+                topic_name="task-events",
+                data=event_data
+            )
+            print(f"Published task_updated event for task {task.id}")
+        except Exception as pub_error:
+            print(f"Warning: Failed to publish task_updated event: {str(pub_error)}")
+
         # Convert to response schema with string user_id
         return TaskRead(
             id=task.id,
@@ -567,10 +594,42 @@ async def delete_task(
             detail=f"Task {task_id} not found"
         )
 
+    # Capture task data before deletion for event publishing
+    task_data_for_event = {
+        "task_id": task.id,
+        "user_id": str(task.user_id),
+        "title": task.title,
+        "description": task.description,
+        "completed": task.completed,
+        "priority_id": task.priority_id,
+        "due_date": task.due_date.isoformat() if task.due_date else None,
+        "is_recurring": task.is_recurring,
+        "recurrence_pattern": task.recurrence_pattern,
+        "created_at": task.created_at.isoformat(),
+        "updated_at": task.updated_at.isoformat()
+    }
+
     # Delete from database (hard delete)
     try:
         session.delete(task)
         session.commit()
+
+        # Publish task_deleted event to Dapr pub/sub
+        try:
+            event_data = {
+                "event_type": "task_deleted",
+                **task_data_for_event
+            }
+
+            dapr_client.publish_event(
+                pubsub_name="kafka-pubsub",
+                topic_name="task-events",
+                data=event_data
+            )
+            print(f"Published task_deleted event for task {task_id}")
+        except Exception as pub_error:
+            print(f"Warning: Failed to publish task_deleted event: {str(pub_error)}")
+
         return {"detail": "Task deleted"}
     except Exception as e:
         session.rollback()
@@ -654,6 +713,34 @@ async def toggle_task_completion(
         # Fetch tag IDs for this task
         tag_statement = select(TaskTag.tag_id).where(TaskTag.task_id == task.id)
         task_tag_ids = session.exec(tag_statement).all()
+
+        # Publish task completion event to Dapr pub/sub
+        try:
+            event_type = "task_completed" if task.completed else "task_uncompleted"
+            event_data = {
+                "event_type": event_type,
+                "task_id": task.id,
+                "user_id": str(task.user_id),
+                "title": task.title,
+                "description": task.description,
+                "completed": task.completed,
+                "priority_id": task.priority_id,
+                "due_date": task.due_date.isoformat() if task.due_date else None,
+                "is_recurring": task.is_recurring,
+                "recurrence_pattern": task.recurrence_pattern,
+                "tag_ids": list(task_tag_ids),
+                "created_at": task.created_at.isoformat(),
+                "updated_at": task.updated_at.isoformat()
+            }
+
+            dapr_client.publish_event(
+                pubsub_name="kafka-pubsub",
+                topic_name="task-events",
+                data=event_data
+            )
+            print(f"Published {event_type} event for task {task.id}")
+        except Exception as pub_error:
+            print(f"Warning: Failed to publish task completion event: {str(pub_error)}")
 
         # Convert to response schema with string user_id
         return TaskRead(

@@ -28,14 +28,12 @@ class TaskTag(SQLModel, table=True):
     task_id: int = Field(
         foreign_key="tasks.id",
         primary_key=True,
-        ondelete="CASCADE",
         description="Foreign key to tasks table"
     )
 
     tag_id: int = Field(
         foreign_key="tags.id",
         primary_key=True,
-        ondelete="CASCADE",
         description="Foreign key to tags table"
     )
 

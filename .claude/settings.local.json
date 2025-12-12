@@ -43,7 +43,18 @@
       "mcp__context7__resolve-library-id",
       "mcp__context7__get-library-docs",
       "Bash(vercel env:*)",
-      "Bash(vercel logs:*)"
+      "Bash(vercel logs:*)",
+      "Bash(git stash:*)",
+      "Bash(kubectl get:*)",
+      "Bash(docker build:*)",
+      "Bash(docker push:*)",
+      "Bash(kubectl rollout:*)",
+      "Bash(kubectl describe:*)",
+      "Bash(kubectl delete:*)",
+      "Bash(kubectl scale:*)",
+      "Bash(kubectl logs:*)",
+      "Bash(kubectl exec:*)",
+      "Bash(kubectl patch:*)"
     ],
     "deny": [],
     "ask": []
