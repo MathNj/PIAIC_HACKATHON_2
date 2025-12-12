@@ -6,6 +6,8 @@ import { tasksApi } from "@/lib/tasks-api";
 import type { Task, TaskCreateInput, TaskPriority } from "@/lib/types";
 import { Dialog, Transition } from "@headlessui/react";
 import Link from "next/link";
+import VoiceButton from "@/components/VoiceButton";
+import { LanguageSwitcher, useLanguage } from "@/lib/i18n/LanguageContext";
 
 // Priority ID to string mapping (backend uses 1=High, 2=Medium, 3=Low)
 const PRIORITY_ID_MAP: { [key: number]: TaskPriority } = {
@@ -48,6 +50,7 @@ const PRIORITY_STYLES: { [key in TaskPriority]: { badge: string; border: string;
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
+  const { language } = useLanguage();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -175,6 +178,7 @@ export default function DashboardPage() {
           <span className="text-xl font-bold text-white">Welcome, {user?.name || user?.email || "Test User"}!</span>
         </div>
         <div className="flex items-center gap-4">
+          <LanguageSwitcher className="btn-secondary text-sm hover:bg-white/10" />
           <Link href="/chat" className="btn-secondary text-sm">
             New Chat
           </Link>
@@ -241,6 +245,18 @@ export default function DashboardPage() {
         onSave={handleUpdateTask}
         task={editingTask}
         title="Edit Task"
+      />
+
+      {/* Voice Commands Button */}
+      <VoiceButton
+        language={language === 'ur' ? 'ur-PK' : 'en-US'}
+        onCreateTask={(title) => handleCreateTask({ title, description: "", priority_id: 2 })}
+        onCompleteTask={(taskId) => {
+          const task = tasks.find(t => t.id === taskId);
+          if (task) handleToggleComplete(task);
+        }}
+        onDeleteTask={(taskId) => handleDeleteTask(taskId)}
+        onListTasks={() => setFilter('all')}
       />
 
       <style jsx global>{`
