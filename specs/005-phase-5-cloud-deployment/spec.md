@@ -31,6 +31,20 @@ specs/005-phase-5/
     └── requirements.md (quality validation)
 ```
 
+---
+
+## Clarifications
+
+### Session 2025-12-11
+
+- Q: When transitioning from the monolithic REST API to the event-driven Dapr architecture, which deployment strategy should we use? → A: Strangler Fig Pattern (gradual endpoint migration) - Migrate endpoints incrementally to Dapr while keeping old code running. New task endpoints use Dapr, existing endpoints unchanged until validated.
+- Q: When implementing Dapr event publishing alongside existing REST endpoints, how should we handle the FastAPI main.py structure? → A: Keep Existing Structure, Add Dapr Publisher Module - Create new `app/dapr/publisher.py` for event publishing logic. Existing routers import and call publisher optionally. main.py structure unchanged.
+- Q: When adding new columns (priority_id, due_date, is_recurring, recurrence_pattern) to the existing tasks table, how should we handle backward compatibility? → A: Nullable Columns with Sensible Defaults - Add all new columns as nullable with defaults in application code (priority_id=2 for Medium, is_recurring=false). Existing tasks work unchanged, zero downtime migration.
+- Q: When publishing events from the backend via httpx to localhost:3500, what should be the error handling strategy if the Dapr sidecar is temporarily unavailable? → A: Fire-and-Forget with Logging - Attempt to publish event in try/except block. If fails, log error and continue. API response always succeeds after DB write. Prioritizes availability over guaranteed event delivery.
+- Q: During the Strangler Fig migration, if a Dapr-enabled endpoint exhibits critical issues in production, what should be the rollback strategy? → A: Feature Flag Toggle - Implement feature flags in publisher module to enable/disable Dapr event publishing per endpoint. Rollback = set flag to false, restart pods (30 seconds). Old code path remains active.
+
+---
+
 ## User Scenarios & Testing *(mandatory)*
 
 ### User Story 1 - Event-Driven Task Operations (Priority: P1)
@@ -132,8 +146,8 @@ Phase 5 is divided into four interconnected components. Each component has its o
 - Create `tags` table with user-scoped custom labels
 - Create `task_tags` junction table (many-to-many relationship)
 - Create `recurring_tasks` table with cron expression support
-- Add `priority_id` and `recurring_task_id` foreign keys to `tasks` table
-- Update SQLModel models for all new entities
+- Add **nullable** columns to `tasks` table: `priority_id` (default: 2/Medium), `due_date` (default: NULL), `is_recurring` (default: false), `recurrence_pattern` (default: NULL), `recurring_task_id` (default: NULL) - ensures backward compatibility with existing tasks
+- Update SQLModel models for all new entities with Optional[] types
 - Create REST API endpoints for priorities, tags, and recurring task CRUD
 - Update frontend UI to support priority selection and tag management
 
@@ -191,11 +205,11 @@ Phase 5 is divided into four interconnected components. Each component has its o
 **High-Level Phase 5 Requirements**:
 
 - **FR-P5-001**: System MUST use Dapr as the service mesh for all microservice communication patterns (pub/sub, state, bindings)
-- **FR-P5-002**: Backend MUST publish events to Kafka for all task operations (create, update, delete, complete) via Dapr HTTP API
+- **FR-P5-002**: Backend MUST publish events to Kafka for all task operations (create, update, delete, complete) via Dapr HTTP API using dedicated publisher module (`app/dapr/publisher.py`), keeping main.py structure unchanged
 - **FR-P5-003**: Notification Service MUST subscribe to task-events topic and process events asynchronously
 - **FR-P5-004**: Recurring Task Service MUST run on a 5-minute cron schedule to generate task instances from templates
 - **FR-P5-005**: All services MUST use Redis via Dapr state store API for distributed session and cache management
-- **FR-P5-006**: Event publishing MUST NOT block API responses - events published asynchronously with non-failing semantics
+- **FR-P5-006**: Event publishing MUST NOT block API responses - events published via httpx to localhost:3500 in try/except block with fire-and-forget semantics (log errors, never fail API response)
 - **FR-P5-007**: Database schema MUST include priorities, tags, task_tags, and recurring_tasks tables with proper foreign keys
 - **FR-P5-008**: Production deployment MUST use Redpanda Cloud with SASL/SSL authentication and TLS encryption
 - **FR-P5-009**: Kubernetes Secrets MUST store all production credentials (Redpanda, Redis) with secretKeyRef in Dapr components
@@ -289,11 +303,15 @@ Phase 5 follows a deliberate sequence to minimize risk:
    - Deploy local Redis via Helm
    - Create Dapr components: kafka-pubsub, statestore, reminder-cron
 
-3. **Backend Dapr Integration** (008-event-driven-dapr)
-   - Add Dapr sidecar to backend Helm chart (annotations)
-   - Implement event publisher using httpx to localhost:3500
-   - Update task endpoints to publish events (non-blocking)
-   - Verify events appear in Kafka logs
+3. **Backend Dapr Integration** (008-event-driven-dapr) - **Strangler Fig Pattern with Feature Flags**
+   - Add Dapr sidecar to backend Helm chart (annotations) alongside existing code
+   - Implement new event publisher using httpx to localhost:3500 (parallel to existing logic)
+   - Add feature flag system to publisher module (enable/disable per endpoint)
+   - Migrate task endpoints incrementally: start with POST /tasks (flag=true), then PATCH /tasks/{id}, keep existing endpoints until validated
+   - Each endpoint migration: add Dapr event publishing while keeping original response flow
+   - Verify events appear in Kafka logs before migrating next endpoint
+   - Rollback strategy: toggle feature flag to false, restart pods (30 seconds, no redeployment needed)
+   - Old code remains callable until full validation of Dapr-based flow complete
 
 4. **Microservices Implementation** (010-microservices)
    - Build Notification Service (FastAPI + Dapr subscription)

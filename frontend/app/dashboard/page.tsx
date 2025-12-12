@@ -7,6 +7,26 @@ import type { Task, TaskCreateInput, TaskPriority } from "@/lib/types";
 import { Dialog, Transition } from "@headlessui/react";
 import Link from "next/link";
 
+// Priority ID to string mapping (backend uses 1=High, 2=Medium, 3=Low)
+const PRIORITY_ID_MAP: { [key: number]: TaskPriority } = {
+  1: "high",
+  2: "normal",
+  3: "low",
+};
+
+// Reverse mapping: string to ID
+const PRIORITY_STRING_TO_ID: { [key in TaskPriority]: number } = {
+  high: 1,
+  normal: 2,
+  low: 3,
+};
+
+// Helper function to get priority string from priority_id
+function getPriorityString(priority_id?: number | null): TaskPriority {
+  if (!priority_id || !PRIORITY_ID_MAP[priority_id]) return "normal";
+  return PRIORITY_ID_MAP[priority_id];
+}
+
 // Priority styling constants
 const PRIORITY_STYLES: { [key in TaskPriority]: { badge: string; border: string; text: string } } = {
   low: {
@@ -117,12 +137,12 @@ export default function DashboardPage() {
   }, [tasks]);
 
   const highPriorityTaskCount = useMemo(() => {
-    return tasks.filter(task => !task.completed && task.priority === "high").length;
+    return tasks.filter(task => !task.completed && task.priority_id === 1).length; // 1 = High
   }, [tasks]);
 
   const otherTaskCount = useMemo(() => {
     const now = new Date();
-    return tasks.filter(task => !task.completed && task.priority !== "high" && (!task.due_date || new Date(task.due_date) >= now)).length;
+    return tasks.filter(task => !task.completed && task.priority_id !== 1 && (!task.due_date || new Date(task.due_date) >= now)).length;
   }, [tasks]);
 
   const filteredTasks = tasks.filter(task => {
@@ -131,7 +151,10 @@ export default function DashboardPage() {
     if (filter === "completed" && !task.completed) return false;
 
     // Filter by priority
-    if (priorityFilter !== "all" && task.priority !== priorityFilter) return false;
+    if (priorityFilter !== "all") {
+      const priorityId = PRIORITY_STRING_TO_ID[priorityFilter];
+      if (task.priority_id !== priorityId) return false;
+    }
 
     return true;
   });
@@ -190,10 +213,10 @@ export default function DashboardPage() {
           filteredTasks.length === 0 ? (
             <EmptyState onNewTask={() => setShowCreateDialog(true)} />
           ) : (
-            <div className="grid gap-4 animate-fade-in">
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
               {filteredTasks.map(task => (
-                <TaskCard 
-                  key={task.id} 
+                <TaskCard
+                  key={task.id}
                   task={task}
                   onToggleComplete={handleToggleComplete}
                   onEdit={() => setEditingTask(task)}
@@ -351,47 +374,47 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }: { task: Task, on
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   };
 
+  const priority = getPriorityString(task.priority_id);
+
   return (
-    <div className={`glass-dark rounded-xl p-5 border-l-4 hover:shadow-2xl transition-all duration-300 ${task.completed ? "border-green-500 bg-white/5 opacity-75" : PRIORITY_STYLES[task.priority].border}`}>
-      <div className="flex items-start gap-4">
-        <input 
-          type="checkbox" 
-          checked={task.completed} 
-          onChange={() => onToggleComplete(task)} 
-          className="mt-1 h-5 w-5 text-indigo-500 bg-transparent border-gray-600 rounded focus:ring-indigo-500 cursor-pointer" 
+    <div className={`glass-dark rounded-xl p-5 border-l-4 hover:shadow-2xl transition-all duration-300 flex flex-col ${task.completed ? "border-green-500 bg-white/5 opacity-75" : PRIORITY_STYLES[priority].border}`}>
+      <div className="flex items-start gap-4 flex-1">
+        <input
+          type="checkbox"
+          checked={task.completed}
+          onChange={() => onToggleComplete(task)}
+          className="mt-1 h-5 w-5 text-indigo-500 bg-transparent border-gray-600 rounded focus:ring-indigo-500 cursor-pointer"
         />
         <div className="flex-1 min-w-0">
-          <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
-            <div className="flex-1">
-              <h3 className={`font-semibold text-lg ${task.completed ? "line-through text-gray-500" : "text-white"}`}>{task.title}</h3>
-              {task.description && <p className="text-sm text-gray-400 mt-1">{task.description}</p>}
-              <div className="flex flex-wrap items-center gap-3 mt-3 text-xs">
-                <span className={`inline-flex items-center px-3 py-1 rounded-full font-medium ${PRIORITY_STYLES[task.priority].badge}`}>
-                  {task.priority.charAt(0).toUpperCase() + task.priority.slice(1)}
-                </span>
-                {task.due_date && <span className="text-gray-400">📅 Due: {formatDate(task.due_date)}</span>}
-                <span className="text-gray-500">Created: {new Date(task.created_at).toLocaleDateString()}</span>
-              </div>
-            </div>
-            <div className="flex flex-row gap-2 mt-2 md:mt-0">
-              <button
-                onClick={() => onToggleComplete(task)}
-                className={`btn-secondary text-xs px-3 py-1.5 ${task.completed ? "!border-yellow-600/50 hover:!bg-yellow-600/30 text-yellow-300" : "!border-green-600/50 hover:!bg-green-600/30 text-green-300"}`}
-              >
-                {task.completed ? "Mark Incomplete" : "Mark Complete"}
-              </button>
-              <button onClick={() => onEdit(task)} className="btn-secondary text-xs px-3 py-1.5">Edit</button>
-              <button onClick={() => { if (confirm("Are you sure?")) onDelete(task.id); }} className="btn-secondary text-xs px-3 py-1.5 !border-red-800/50 hover:!bg-red-800/50 text-red-300">Delete</button>
-            </div>
+          <h3 className={`font-semibold text-lg ${task.completed ? "line-through text-gray-500" : "text-white"}`}>{task.title}</h3>
+          {task.description && <p className="text-sm text-gray-400 mt-1">{task.description}</p>}
+          <div className="flex flex-wrap items-center gap-3 mt-3 text-xs">
+            <span className={`inline-flex items-center px-3 py-1 rounded-full font-medium ${PRIORITY_STYLES[priority].badge}`}>
+              {priority.charAt(0).toUpperCase() + priority.slice(1)}
+            </span>
+            {task.due_date && <span className="text-gray-400">📅 Due: {formatDate(task.due_date)}</span>}
+            <span className="text-gray-500">Created: {new Date(task.created_at).toLocaleDateString()}</span>
           </div>
         </div>
+      </div>
+
+      {/* Action buttons at the bottom */}
+      <div className="flex flex-wrap gap-2 mt-4 pt-4 border-t border-gray-700/50">
+        <button
+          onClick={() => onToggleComplete(task)}
+          className={`btn-secondary text-xs px-3 py-1.5 flex-1 ${task.completed ? "!border-yellow-600/50 hover:!bg-yellow-600/30 text-yellow-300" : "!border-green-600/50 hover:!bg-green-600/30 text-green-300"}`}
+        >
+          {task.completed ? "Mark Incomplete" : "Mark Complete"}
+        </button>
+        <button onClick={() => onEdit(task)} className="btn-secondary text-xs px-3 py-1.5 flex-1">Edit</button>
+        <button onClick={() => { if (confirm("Are you sure?")) onDelete(task.id); }} className="btn-secondary text-xs px-3 py-1.5 flex-1 !border-red-800/50 hover:!bg-red-800/50 text-red-300">Delete</button>
       </div>
     </div>
   );
 };
 
 const TaskDialog = ({ isOpen, onClose, onSave, task, title }: { isOpen: boolean, onClose: () => void, onSave: (data: any) => Promise<void>, task?: Task | null, title: string }) => {
-  const [formData, setFormData] = useState({ title: "", description: "", priority: "normal" as TaskPriority, due_date: "" });
+  const [formData, setFormData] = useState({ title: "", description: "", priority_id: 2, due_date: "" }); // 2 = Normal
   const [isSaving, setIsSaving] = useState(false);
 
   useEffect(() => {
@@ -399,16 +422,19 @@ const TaskDialog = ({ isOpen, onClose, onSave, task, title }: { isOpen: boolean,
       setFormData({
         title: task.title,
         description: task.description || "",
-        priority: task.priority,
+        priority_id: task.priority_id || 2, // Default to Normal if null
         due_date: task.due_date ? task.due_date.split('T')[0] : ""
       });
     } else {
-      setFormData({ title: "", description: "", priority: "normal", due_date: "" });
+      setFormData({ title: "", description: "", priority_id: 2, due_date: "" }); // 2 = Normal
     }
   }, [task, isOpen]);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    // Convert priority_id from string to number
+    const processedValue = name === "priority_id" ? parseInt(value, 10) : value;
+    setFormData({ ...formData, [name]: processedValue });
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -432,10 +458,10 @@ const TaskDialog = ({ isOpen, onClose, onSave, task, title }: { isOpen: boolean,
                 <form onSubmit={handleSubmit} className="space-y-4">
                   <FormInput name="title" label="Title *" value={formData.title} onChange={handleChange} required />
                   <FormTextArea name="description" label="Description" value={formData.description} onChange={handleChange} />
-                  <FormSelect name="priority" label="Priority" value={formData.priority} onChange={handleChange}>
-                    <option value="low">🔵 Low</option>
-                    <option value="normal">🟡 Normal</option>
-                    <option value="high">🔴 High</option>
+                  <FormSelect name="priority_id" label="Priority" value={formData.priority_id} onChange={handleChange}>
+                    <option value="3">🔵 Low</option>
+                    <option value="2">🟡 Normal</option>
+                    <option value="1">🔴 High</option>
                   </FormSelect>
                   <FormInput name="due_date" label="Due Date" type="date" value={formData.due_date} onChange={handleChange} min={new Date().toISOString().split('T')[0]} />
                   <div className="flex gap-3 pt-4">

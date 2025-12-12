@@ -1,0 +1,167 @@
+# Dapr Kafka Pub/Sub Component - Production Configuration
+# Phase 5 Component 4: Cloud Deployment (DOKS + Redpanda Cloud)
+#
+# This component configures Dapr to connect to Redpanda Cloud with:
+# - SASL/SCRAM-SHA-256 authentication
+# - TLS/SSL encryption
+# - Credentials injected from Kubernetes Secret via secretKeyRef
+#
+# Prerequisites:
+#   1. Redpanda Cloud cluster provisioned
+#   2. Kubernetes Secret "redpanda-credentials" created
+#   3. Dapr control plane installed on DOKS cluster
+#
+# Usage:
+#   kubectl apply -f kafka-pubsub-prod.yaml
+
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kafka-pubsub
+  namespace: default
+  labels:
+    app: todo-app
+    component: messaging
+    environment: production
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  # ========== Connection Configuration ==========
+  # Broker URLs - injected from Kubernetes Secret
+  - name: brokers
+    secretKeyRef:
+      name: redpanda-credentials
+      key: brokers
+
+  # Consumer group for all subscribers (ensures only one instance processes each event)
+  - name: consumerGroup
+    value: "todo-app-production-group"
+
+  # Client ID for Kafka connections (visible in Redpanda Cloud monitoring)
+  - name: clientID
+    value: "todo-app-production-client"
+
+  # ========== Authentication Configuration ==========
+  # SASL authentication mechanism
+  - name: authType
+    value: "password"  # Corresponds to SASL/SCRAM
+
+  # SASL mechanism (SCRAM-SHA-256 for Redpanda Cloud)
+  - name: saslMechanism
+    value: "SCRAM-SHA-256"
+
+  # SASL username - injected from Kubernetes Secret
+  - name: saslUsername
+    secretKeyRef:
+      name: redpanda-credentials
+      key: sasl-username
+
+  # SASL password - injected from Kubernetes Secret
+  - name: saslPassword
+    secretKeyRef:
+      name: redpanda-credentials
+      key: sasl-password
+
+  # ========== TLS/SSL Configuration ==========
+  # Enable TLS for encrypted connections (required for Redpanda Cloud)
+  - name: enableTLS
+    value: "true"
+
+  # Optional: TLS CA certificate (uncomment if custom CA is needed)
+  # Redpanda Cloud uses publicly trusted CA, so this is typically not required
+  # - name: caCert
+  #   secretKeyRef:
+  #     name: redpanda-credentials
+  #     key: ca-cert
+
+  # ========== Producer Configuration ==========
+  # Enable idempotent producer for exactly-once semantics
+  - name: enableIdempotence
+    value: "true"
+
+  # Message compression (gzip for better network efficiency)
+  - name: compressionType
+    value: "gzip"
+
+  # Timeout for producer sends (10 seconds)
+  - name: producerMaxWaitTime
+    value: "10s"
+
+  # Number of retries for failed messages
+  - name: producerRetries
+    value: "3"
+
+  # Maximum message size (10 MB)
+  - name: maxMessageBytes
+    value: "10485760"
+
+  # ========== Consumer Configuration ==========
+  # Enable consumer retry for transient failures
+  - name: consumeRetryEnabled
+    value: "true"
+
+  # Retry interval between attempts
+  - name: consumeRetryInterval
+    value: "3s"
+
+  # Total retry duration before giving up
+  - name: consumeRetryDuration
+    value: "30s"
+
+  # Auto-offset reset strategy (earliest = process all messages from beginning)
+  - name: autoOffsetReset
+    value: "earliest"
+
+  # ========== Kafka Protocol Version ==========
+  # Kafka protocol version (compatible with Redpanda Cloud)
+  - name: version
+    value: "2.8.0"
+
+  # ========== Performance Tuning ==========
+  # Session timeout for consumer group (default: 10s)
+  - name: sessionTimeout
+    value: "10s"
+
+  # Heartbeat interval (should be < sessionTimeout/3)
+  - name: heartbeatInterval
+    value: "3s"
+
+  # Maximum time to wait for batch in consumer (lower = lower latency)
+  - name: maxWaitTime
+    value: "500ms"
+
+# ========== Scopes ==========
+# Define which services can use this component
+scopes:
+- backend-service
+- notification-service
+- recurring-task-service
+
+---
+# Notes for Operations:
+#
+# 1. Credential Rotation:
+#    - Update "redpanda-credentials" Kubernetes Secret
+#    - Restart pods: kubectl rollout restart deployment/<service-name>
+#    - Verify connectivity in Dapr sidecar logs
+#
+# 2. Monitoring:
+#    - Check Redpanda Cloud console for connection status
+#    - Monitor Dapr metrics: kubectl port-forward svc/dapr-dashboard -n dapr-system 8080:8080
+#    - Check consumer lag: rpk topic consume task-events --brokers <broker-url>
+#
+# 3. Troubleshooting:
+#    - Verify Secret exists: kubectl get secret redpanda-credentials -o yaml
+#    - Check Dapr logs: kubectl logs <pod-name> -c daprd
+#    - Test connectivity: kubectl run kafka-test --image=confluentinc/cp-kafka:latest --rm -it
+#
+# 4. Topics:
+#    - task-events (partitions: 3, replicas: 3)
+#    - notification-events (partitions: 1, replicas: 3)
+#    - reminder-events (partitions: 1, replicas: 3)
+#
+# 5. Security:
+#    - All traffic encrypted with TLS/SSL
+#    - SASL/SCRAM-SHA-256 authentication enforced
+#    - Credentials stored encrypted in Kubernetes Secrets (etcd encryption at rest)

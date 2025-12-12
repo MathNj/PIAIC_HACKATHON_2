@@ -176,11 +176,11 @@ Polish & Testing
 
 ### Tasks
 
-- [ ] T024 [P] [US3] Implement `add_task(user_token, title, description, priority, due_date)` MCP tool in `backend/mcp/tools.py` with @mcp.tool() decorator, JWT validation via verify_token(), and structured error handling
-- [ ] T025 [P] [US3] Implement `update_task(user_token, task_id, title, description, priority, due_date)` MCP tool in `backend/mcp/tools.py` with partial update support (only update provided fields)
-- [ ] T026 [P] [US3] Implement `delete_task(user_token, task_id)` MCP tool in `backend/mcp/tools.py` with user ownership validation
-- [ ] T027 [US3] Integrate MCP tools with agent in `backend/agents/chat_agent.py`: Get tool list from `mcp_server.list_tools()`, pass to OpenAI chat completion
-- [ ] T028 [US3] Implement tool call execution loop in `backend/agents/chat_agent.py`: Execute tools, collect results, log to tool_calls array, return with agent response
+- [X] T024 [P] [US3] Implement `add_task(user_token, title, description, priority, due_date)` MCP tool in `backend/mcp/tools.py` with @mcp.tool() decorator, JWT validation via verify_token(), and structured error handling
+- [X] T025 [P] [US3] Implement `update_task(user_token, task_id, title, description, priority, due_date)` MCP tool in `backend/mcp/tools.py` with partial update support (only update provided fields)
+- [X] T026 [P] [US3] Implement `delete_task(user_token, task_id)` MCP tool in `backend/mcp/tools.py` with user ownership validation
+- [X] T027 [US3] Integrate MCP tools with agent in `backend/agent_runner/runner.py`: Get tool list from tool wrappers, pass to OpenAI agent completion (Gemini API)
+- [X] T028 [US3] Implement tool call execution loop in `backend/agent_runner/runner.py`: Execute tools, collect results, log to tool_calls array, return with agent response
 
 ---
 
@@ -198,9 +198,9 @@ Polish & Testing
 
 ### Tasks
 
-- [ ] T029 [P] [US4] Implement `parse_due_date(natural_language)` helper function in `backend/mcp/tools.py` using python-dateutil parser with fuzzy=True
-- [ ] T030 [US4] Add temporal expression handling to `add_task` tool: Call `parse_due_date()` if due_date contains non-ISO characters
-- [ ] T031 [US4] Update system prompt in `backend/agents/chat_agent.py` to include temporal expression examples (tomorrow, next week, Monday)
+- [X] T029 [P] [US4] Implement `parse_due_date(natural_language)` helper function in `backend/mcp/tools.py` using python-dateutil parser with fuzzy=True
+- [X] T030 [US4] Add temporal expression handling to `add_task` tool: Call `parse_due_date()` if due_date contains non-ISO characters
+- [X] T031 [US4] Update system prompt in `backend/agent_runner/runner.py` to include temporal expression examples (tomorrow, next week, Monday) with multi-language support (Urdu, Arabic)
 
 ---
 
@@ -218,9 +218,9 @@ Polish & Testing
 
 ### Tasks
 
-- [ ] T032 [P] [US5] Implement `infer_priority(description)` helper function in `backend/mcp/tools.py` that scans for urgency keywords
-- [ ] T033 [US5] Update `add_task` tool to call `infer_priority()` if priority not explicitly provided
-- [ ] T034 [US5] Update system prompt in `backend/agents/chat_agent.py` to include priority inference examples (urgent, asap, critical)
+- [X] T032 [P] [US5] Implement `infer_priority(description)` helper function in `backend/mcp/tools.py` that scans for urgency keywords
+- [X] T033 [US5] Update `add_task` tool to call `infer_priority()` if priority not explicitly provided
+- [X] T034 [US5] Update system prompt in `backend/agent_runner/runner.py` to include priority inference examples (urgent, asap, critical) with multi-language keywords (Urdu: فوری, Arabic: عاجل)
 
 ---
 
@@ -238,10 +238,10 @@ Polish & Testing
 
 ### Tasks
 
-- [ ] T035 [P] [US6] Implement `list_tasks(user_token, status="all", sort="created")` MCP tool in `backend/mcp/tools.py` with filtering and sorting support
-- [ ] T036 [P] [US6] Implement `complete_task(user_token, task_id)` MCP tool in `backend/mcp/tools.py` that toggles task.completed status
-- [ ] T037 [P] [US6] Implement `get_task_summary(user_token, timeframe="all")` MCP tool in `backend/mcp/tools.py` that returns counts and statistics
-- [ ] T038 [US6] Implement `suggest_task_prioritization(user_token)` MCP tool in `backend/mcp/tools.py` that scores tasks (priority weight + due date urgency) and returns ordered list with reasoning
+- [X] T035 [P] [US6] Implement `list_tasks(user_token, status="all", sort="created")` MCP tool in `backend/mcp/tools.py` with filtering and sorting support
+- [X] T036 [P] [US6] Implement `toggle_task_completion(user_token, task_id)` MCP tool in `backend/mcp/tools.py` that toggles task.completed status
+- [X] T037 [P] [US6] Implement `get_task_summary(user_token, timeframe="all")` MCP tool in `backend/mcp/tools.py` that returns counts and statistics
+- [X] T038 [US6] Implement `suggest_task_prioritization(user_token)` MCP tool in `backend/mcp/tools.py` that scores tasks (priority weight + due date urgency) and returns ordered list with reasoning
 
 ---
 
@@ -260,12 +260,12 @@ Polish & Testing
 
 ### Tasks
 
-- [ ] T039 [US7] Add JWT validation to all 7 MCP tools: Extract user_id via `verify_token(user_token)` at start of each function
-- [ ] T040 [US7] Add multi-user isolation to `list_tasks`: Filter query by `WHERE user_id = :user_id`
-- [ ] T041 [US7] Add multi-user isolation to `complete_task`, `delete_task`, `update_task`: Query with `WHERE task_id = :task_id AND user_id = :user_id`
-- [ ] T042 [US7] Add error handling to all MCP tools: Catch HTTPException (auth errors) and return `"Authentication error: {detail}"`
-- [ ] T043 [US7] Update chat endpoint to verify path user_id matches JWT user_id (raise HTTPException 403 if mismatch)
-- [ ] T044 [US7] Verify tool calls logged in messages.tool_calls with user_id context (test with sample conversation)
+- [X] T039 [US7] Add JWT validation to all 7 MCP tools: Extract user_id via `validate_jwt_token(user_token)` at start of each function
+- [X] T040 [US7] Add multi-user isolation to `list_tasks`: Filter query by `WHERE user_id = :user_id`
+- [X] T041 [US7] Add multi-user isolation to `toggle_task_completion`, `delete_task`, `update_task`: Query with `WHERE task_id = :task_id AND user_id = :user_id`
+- [X] T042 [US7] Add error handling to all MCP tools: Catch MCPToolError (auth errors) and return structured error responses
+- [X] T043 [US7] Update chat endpoint to verify path user_id matches JWT user_id (raise HTTPException 403 if mismatch)
+- [X] T044 [US7] Verify tool calls logged in messages.tool_calls with user_id context (implemented in agent runner)
 
 ---
 

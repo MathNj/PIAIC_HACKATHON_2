@@ -77,9 +77,15 @@ Phase 5: Event-Driven Architecture with Dapr, Kafka, and Cloud Deployment 🚧 *
 
 ---
 
-### ✅ Phase 4 - Kubernetes & Minikube (Completed)
-**Specs**: `specs/004-k8s-blueprint/`, `specs/005-docker-containers/`, `specs/006-helm-chart/`, `specs/007-minikube-deployment/`
+### ✅ Phase 4 - Local Kubernetes Deployment (Completed)
+**Spec**: `specs/004-phase-4-local-deployment/spec.md`
 
+**Sub-components**:
+- `k8s-blueprint/` - Kubernetes architecture and manifests
+- `docker-containers/` - Docker containerization (backend + frontend)
+- `helm-chart/` - Helm charts for package management
+
+**Implemented Features**:
 - [x] Docker containerization (backend + frontend)
 - [x] Kubernetes manifests (Deployment, Service, ConfigMap, Secret)
 - [x] Helm charts for package management
@@ -90,13 +96,16 @@ Phase 5: Event-Driven Architecture with Dapr, Kafka, and Cloud Deployment 🚧 *
 
 ---
 
-### 🚧 Phase 5 - Event-Driven Architecture (In Progress)
-**Spec**: `specs/005-phase-5/spec.md` ⭐ **Consolidated Phase 5 Spec**
+### 🚧 Phase 5 - Cloud Deployment & Event-Driven Architecture (In Progress)
+**Spec**: `specs/005-phase-5-cloud-deployment/spec.md` ⭐ **Consolidated Phase 5 Spec**
 
-**Components** (see `specs/005-phase-5/components/README.md`):
+**Sub-components** (see `specs/005-phase-5-cloud-deployment/components/README.md`):
+- `event-driven-dapr/` - Dapr infrastructure and event streaming
+- `microservices/` - Notification and Recurring Task services
+- `cloud-doks-deployment/` - DigitalOcean Kubernetes production deployment
 
 #### Component 1: Dapr Infrastructure ✅ Implemented
-**Spec**: `specs/008-event-driven-dapr/spec.md`
+**Location**: `specs/005-phase-5-cloud-deployment/event-driven-dapr/`
 
 - [x] Dapr control plane installation (Minikube)
 - [x] kafka-pubsub component configuration
@@ -107,7 +116,7 @@ Phase 5: Event-Driven Architecture with Dapr, Kafka, and Cloud Deployment 🚧 *
 - [x] Event publishing in task endpoints
 
 #### Component 2: Advanced Task Features ✅ Implemented
-**Spec**: `specs/009-advanced-task-features/spec.md`
+**Location**: `specs/005-phase-5-cloud-deployment/advanced-task-features/`
 
 - [x] Database schema: priorities, tags, task_tags, recurring_tasks tables
 - [x] SQLModel models for new entities
@@ -115,7 +124,7 @@ Phase 5: Event-Driven Architecture with Dapr, Kafka, and Cloud Deployment 🚧 *
 - [x] Alembic migrations
 
 #### Component 3: Microservices 📋 Specified
-**Spec**: `specs/010-microservices/spec.md`
+**Location**: `specs/005-phase-5-cloud-deployment/microservices/`
 
 - [ ] Notification Service (email, push notifications)
 - [ ] Recurring Task Service (cron-based task generation)
@@ -123,7 +132,7 @@ Phase 5: Event-Driven Architecture with Dapr, Kafka, and Cloud Deployment 🚧 *
 - [ ] Event handlers (task.created, task.completed, task.due)
 
 #### Component 4: Cloud Deployment 📋 Specified
-**Spec**: `specs/011-cloud-doks-deployment/spec.md`
+**Location**: `specs/005-phase-5-cloud-deployment/cloud-doks-deployment/`
 
 - [ ] DigitalOcean Kubernetes Service (DOKS) provisioning
 - [ ] Redpanda Cloud configuration (SASL/SSL)
@@ -218,9 +227,25 @@ Phase 5: Event-Driven Architecture with Dapr, Kafka, and Cloud Deployment 🚧 *
 ## Spec Organization
 
 All project specifications are in `specs/` directory:
-- **Overview**: `specs/overview.md` (this file)
-- **Phase 1**: `specs/001-phase-1/spec.md`
-- **Phase 2**: `specs/002-phase-2/spec.md`
-- **Phase 3**: `specs/003-phase-3-ai-agent/spec.md`
-- **Phase 4**: `specs/004-k8s-blueprint/` through `specs/007-minikube-deployment/`
-- **Phase 5**: `specs/005-phase-5/spec.md` ⭐ (consolidates components 008-011)
+
+```
+specs/
+├── overview.md (this file)
+├── 001-phase-1/                     # Phase 1: Console CRUD Application
+│   └── spec.md
+├── 002-phase-2/                     # Phase 2: Full-Stack Web Application
+│   └── spec.md
+├── 003-phase-3-ai-agent/            # Phase 3: AI Chat Agent
+│   └── spec.md
+├── 004-phase-4-local-deployment/    # Phase 4: Local Kubernetes Deployment
+│   ├── spec.md
+│   ├── k8s-blueprint/               # Kubernetes architecture
+│   ├── docker-containers/           # Docker containerization
+│   └── helm-chart/                  # Helm package management
+└── 005-phase-5-cloud-deployment/    # Phase 5: Cloud & Event-Driven Architecture
+    ├── spec.md ⭐ (consolidated)
+    ├── advanced-task-features/      # Advanced task features (priorities, tags, recurring)
+    ├── event-driven-dapr/           # Dapr infrastructure
+    ├── microservices/               # Notification & Recurring Task services
+    └── cloud-doks-deployment/       # DigitalOcean production deployment
+```

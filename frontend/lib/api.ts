@@ -11,10 +11,11 @@
 import { getJWT, signOut } from "./auth";
 import type { ApiError, ValidationError } from "./types";
 
-// Production backend URL - stable domain that won't change with deployments
-const API_BASE_URL = process.env.NODE_ENV === "production"
-  ? "https://backend-mathnjs-projects.vercel.app"
-  : (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000");
+// Backend URL - check environment variable first, then fall back to production URL
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
+  || (process.env.NODE_ENV === "production"
+    ? "https://backend-mathnjs-projects.vercel.app"
+    : "http://localhost:8000");
 
 interface RequestOptions extends RequestInit {
   headers?: Record<string, string>;
@@ -43,7 +44,7 @@ async function request<T>(path: string, options: RequestOptions = {}): Promise<T
   const config: RequestInit = {
     ...options,
     headers,
-    credentials: "include",
+    // credentials: "include", // Removed - not needed with JWT in Authorization header
   };
 
   try {
