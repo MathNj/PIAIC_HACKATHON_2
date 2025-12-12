@@ -4,12 +4,12 @@ metadata:
   name: frontend-ingress
   namespace: default
   annotations:
-    # Enable cert-manager to automatically provision SSL certificate
+    # Enable cert-manager to automatically provision SSL certificate from Let's Encrypt
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    # Temporarily disable SSL redirect for certificate issuance
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
-    # Lower priority so ACME solver ingresses take precedence
-    nginx.ingress.kubernetes.io/priority: "10"
+    # Enable HTTPS redirect after certificate is issued
+    nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # Force HTTPS
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 spec:
   # Use nginx ingress controller (newer way)
   ingressClassName: nginx
