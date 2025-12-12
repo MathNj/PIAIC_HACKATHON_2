@@ -54,7 +54,8 @@
       "Bash(kubectl scale:*)",
       "Bash(kubectl logs:*)",
       "Bash(kubectl exec:*)",
-      "Bash(kubectl patch:*)"
+      "Bash(kubectl patch:*)",
+      "Bash(git rm:*)"
     ],
     "deny": [],
     "ask": []

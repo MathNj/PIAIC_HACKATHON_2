@@ -1,0 +1,110 @@
+{
+  "common": {
+    "appName": "Todo App",
+    "welcome": "Welcome",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "cancel": "Cancel",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "close": "Close",
+    "search": "Search",
+    "filter": "Filter",
+    "sort": "Sort",
+    "language": "Language"
+  },
+  "auth": {
+    "login": "Login",
+    "signup": "Sign Up",
+    "logout": "Logout",
+    "email": "Email",
+    "password": "Password",
+    "confirmPassword": "Confirm Password",
+    "forgotPassword": "Forgot Password?",
+    "noAccount": "Don't have an account?",
+    "hasAccount": "Already have an account?",
+    "loginSuccess": "Login successful",
+    "signupSuccess": "Account created successfully"
+  },
+  "tasks": {
+    "title": "Tasks",
+    "myTasks": "My Tasks",
+    "newTask": "New Task",
+    "createTask": "Create Task",
+    "editTask": "Edit Task",
+    "deleteTask": "Delete Task",
+    "completeTask": "Complete Task",
+    "taskTitle": "Task Title",
+    "taskDescription": "Task Description",
+    "dueDate": "Due Date",
+    "priority": "Priority",
+    "tags": "Tags",
+    "status": "Status",
+    "completed": "Completed",
+    "pending": "Pending",
+    "all": "All",
+    "active": "Active",
+    "noTasks": "No tasks found",
+    "taskCreated": "Task created successfully",
+    "taskUpdated": "Task updated successfully",
+    "taskDeleted": "Task deleted successfully",
+    "taskCompleted": "Task marked as complete",
+    "taskUncompleted": "Task marked as incomplete",
+    "recurring": "Recurring",
+    "recurrencePattern": "Recurrence Pattern"
+  },
+  "priorities": {
+    "low": "Low",
+    "medium": "Medium",
+    "high": "High",
+    "urgent": "Urgent"
+  },
+  "dashboard": {
+    "title": "Dashboard",
+    "overview": "Overview",
+    "statistics": "Statistics",
+    "recentTasks": "Recent Tasks",
+    "completedToday": "Completed Today",
+    "pendingTasks": "Pending Tasks",
+    "totalTasks": "Total Tasks"
+  },
+  "chat": {
+    "title": "AI Assistant",
+    "placeholder": "Ask me anything about your tasks...",
+    "send": "Send",
+    "thinking": "Thinking...",
+    "newConversation": "New Conversation",
+    "conversations": "Conversations"
+  },
+  "voice": {
+    "startListening": "Start Voice Command",
+    "stopListening": "Stop Listening",
+    "listening": "Listening...",
+    "notSupported": "Voice commands not supported in this browser",
+    "help": "Voice Commands Help",
+    "helpTitle": "Available Voice Commands",
+    "commandCreate": "To create a task: \"create task [task name]\"",
+    "commandComplete": "To complete a task: \"complete task [number]\"",
+    "commandDelete": "To delete a task: \"delete task [number]\"",
+    "commandList": "To list all tasks: \"list tasks\"",
+    "commandHelp": "For help: \"help\"",
+    "feedback": {
+      "created": "Created",
+      "completed": "Completed task",
+      "deleted": "Deleted task",
+      "listed": "Listing tasks",
+      "unknown": "Unknown command",
+      "missingTaskNumber": "Missing task number"
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "language": "Language",
+    "theme": "Theme",
+    "notifications": "Notifications",
+    "account": "Account",
+    "profile": "Profile"
+  }
+}

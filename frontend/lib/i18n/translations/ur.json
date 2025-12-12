@@ -1,0 +1,110 @@
+{
+  "common": {
+    "appName": "ٹو ڈو ایپ",
+    "welcome": "خوش آمدید",
+    "loading": "لوڈ ہو رہا ہے...",
+    "error": "خرابی",
+    "success": "کامیابی",
+    "cancel": "منسوخ کریں",
+    "save": "محفوظ کریں",
+    "delete": "حذف کریں",
+    "edit": "ترمیم کریں",
+    "close": "بند کریں",
+    "search": "تلاش کریں",
+    "filter": "فلٹر",
+    "sort": "ترتیب دیں",
+    "language": "زبان"
+  },
+  "auth": {
+    "login": "لاگ ان",
+    "signup": "سائن اپ",
+    "logout": "لاگ آؤٹ",
+    "email": "ای میل",
+    "password": "پاس ورڈ",
+    "confirmPassword": "پاس ورڈ کی تصدیق کریں",
+    "forgotPassword": "پاس ورڈ بھول گئے؟",
+    "noAccount": "اکاؤنٹ نہیں ہے؟",
+    "hasAccount": "پہلے سے اکاؤنٹ ہے؟",
+    "loginSuccess": "لاگ ان کامیاب",
+    "signupSuccess": "اکاؤنٹ کامیابی سے بنایا گیا"
+  },
+  "tasks": {
+    "title": "کام",
+    "myTasks": "میرے کام",
+    "newTask": "نیا کام",
+    "createTask": "کام بنائیں",
+    "editTask": "کام میں ترمیم کریں",
+    "deleteTask": "کام حذف کریں",
+    "completeTask": "کام مکمل کریں",
+    "taskTitle": "کام کا عنوان",
+    "taskDescription": "کام کی تفصیل",
+    "dueDate": "آخری تاریخ",
+    "priority": "ترجیح",
+    "tags": "ٹیگز",
+    "status": "حیثیت",
+    "completed": "مکمل",
+    "pending": "زیر التواء",
+    "all": "تمام",
+    "active": "فعال",
+    "noTasks": "کوئی کام نہیں ملا",
+    "taskCreated": "کام کامیابی سے بنایا گیا",
+    "taskUpdated": "کام کامیابی سے اپ ڈیٹ ہوا",
+    "taskDeleted": "کام کامیابی سے حذف ہوا",
+    "taskCompleted": "کام مکمل کے طور پر نشان زد",
+    "taskUncompleted": "کام نامکمل کے طور پر نشان زد",
+    "recurring": "دوبارہ ہونے والا",
+    "recurrencePattern": "دوبارہ ہونے کا نمونہ"
+  },
+  "priorities": {
+    "low": "کم",
+    "medium": "درمیانی",
+    "high": "زیادہ",
+    "urgent": "فوری"
+  },
+  "dashboard": {
+    "title": "ڈیش بورڈ",
+    "overview": "جائزہ",
+    "statistics": "اعداد و شمار",
+    "recentTasks": "حالیہ کام",
+    "completedToday": "آج مکمل ہوئے",
+    "pendingTasks": "زیر التواء کام",
+    "totalTasks": "کل کام"
+  },
+  "chat": {
+    "title": "AI اسسٹنٹ",
+    "placeholder": "اپنے کاموں کے بارے میں کچھ بھی پوچھیں...",
+    "send": "بھیجیں",
+    "thinking": "سوچ رہا ہے...",
+    "newConversation": "نئی گفتگو",
+    "conversations": "گفتگو"
+  },
+  "voice": {
+    "startListening": "آواز کمانڈ شروع کریں",
+    "stopListening": "سننا بند کریں",
+    "listening": "سن رہے ہیں...",
+    "notSupported": "اس براؤزر میں آواز کمانڈز کی سہولت دستیاب نہیں",
+    "help": "آواز کمانڈز کی مدد",
+    "helpTitle": "دستیاب آواز کمانڈز",
+    "commandCreate": "کام بنانے کے لیے: \"کام بنائیں [کام کا نام]\"",
+    "commandComplete": "کام مکمل کرنے کے لیے: \"کام مکمل کریں [نمبر]\"",
+    "commandDelete": "کام حذف کرنے کے لیے: \"کام حذف کریں [نمبر]\"",
+    "commandList": "تمام کام دیکھنے کے لیے: \"کام دکھائیں\"",
+    "commandHelp": "مدد کے لیے: \"مدد\"",
+    "feedback": {
+      "created": "بنایا گیا",
+      "completed": "کام مکمل ہوا",
+      "deleted": "کام حذف ہوا",
+      "listed": "کاموں کی فہرست",
+      "unknown": "نامعلوم کمانڈ",
+      "missingTaskNumber": "کام کا نمبر غائب"
+    }
+  },
+  "settings": {
+    "title": "ترتیبات",
+    "language": "زبان",
+    "theme": "تھیم",
+    "notifications": "اطلاعات",
+    "account": "اکاؤنٹ",
+    "profile": "پروفائل"
+  }
+}
