@@ -6,10 +6,10 @@ metadata:
   annotations:
     # Enable cert-manager to automatically provision SSL certificate
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    # Redirect HTTP to HTTPS
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    # Force HTTPS
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    # Temporarily disable SSL redirect for certificate issuance
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Lower priority so ACME solver ingresses take precedence
+    nginx.ingress.kubernetes.io/priority: "10"
 spec:
   # Use nginx ingress controller (newer way)
   ingressClassName: nginx
