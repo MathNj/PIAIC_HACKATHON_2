@@ -50,7 +50,7 @@ const PRIORITY_STYLES: { [key in TaskPriority]: { badge: string; border: string;
 
 export default function DashboardPage() {
   const { user, signOut } = useAuth();
-  const { language } = useLanguage();
+  const { language, t } = useLanguage();
   const [tasks, setTasks] = useState<Task[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -180,13 +180,13 @@ export default function DashboardPage() {
         <div className="flex items-center gap-4">
           <LanguageSwitcher className="btn-secondary text-sm hover:bg-white/10" />
           <Link href="/chat" className="btn-secondary text-sm">
-            New Chat
+            {t('dashboard.newChat')}
           </Link>
           <Link href="/dashboard" className="btn-secondary text-sm">
-            Dashboard
+            {t('dashboard.title')}
           </Link>
           <button onClick={signOut} className="btn-secondary text-sm !text-red-600 hover:!text-red-800">
-            Sign Out
+            {t('common.signOut')}
           </button>
         </div>
       </nav>
@@ -199,23 +199,25 @@ export default function DashboardPage() {
           overdueCount={overdueTaskCount}
           highPriorityCount={highPriorityTaskCount}
           otherCount={otherTaskCount}
+          t={t}
         />
 
         {/* Error Message Display */}
         {error && <ErrorMessage message={error} onDismiss={() => setError(null)} />}
         
         {/* UPDATED: Cleaned up Toolbar */}
-        <Toolbar 
-          filter={filter} 
-          setFilter={setFilter} 
-          priorityFilter={priorityFilter} 
+        <Toolbar
+          filter={filter}
+          setFilter={setFilter}
+          priorityFilter={priorityFilter}
           setPriorityFilter={setPriorityFilter}
           onNewTask={() => setShowCreateDialog(true)}
+          t={t}
         />
 
-        {loading ? <LoadingSpinner /> : (
+        {loading ? <LoadingSpinner t={t} /> : (
           filteredTasks.length === 0 ? (
-            <EmptyState onNewTask={() => setShowCreateDialog(true)} />
+            <EmptyState onNewTask={() => setShowCreateDialog(true)} t={t} />
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 animate-fade-in">
               {filteredTasks.map(task => (
@@ -225,6 +227,7 @@ export default function DashboardPage() {
                   onToggleComplete={handleToggleComplete}
                   onEdit={() => setEditingTask(task)}
                   onDelete={handleDeleteTask}
+                  t={t}
                 />
               ))}
             </div>
@@ -232,19 +235,21 @@ export default function DashboardPage() {
         )}
       </div>
 
-      <TaskDialog 
-        isOpen={showCreateDialog} 
+      <TaskDialog
+        isOpen={showCreateDialog}
         onClose={() => setShowCreateDialog(false)}
         onSave={handleCreateTask}
         title="Create New Task"
+        t={t}
       />
-      
+
       <TaskDialog
         isOpen={!!editingTask}
         onClose={() => setEditingTask(null)}
         onSave={handleUpdateTask}
         task={editingTask}
         title="Edit Task"
+        t={t}
       />
 
       {/* Voice Commands Button */}
@@ -287,25 +292,25 @@ export default function DashboardPage() {
 // SUB-COMPONENTS
 // ============================================
 
-const DashboardHeader = ({ userName, overdueCount, highPriorityCount, otherCount }: { userName: string; overdueCount: number; highPriorityCount: number; otherCount: number; }) => {
+const DashboardHeader = ({ userName, overdueCount, highPriorityCount, otherCount, t }: { userName: string; overdueCount: number; highPriorityCount: number; otherCount: number; t: (key: string) => string }) => {
   return (
     <header className="mb-8 p-6 glass rounded-2xl shadow-lg flex flex-col md:flex-row justify-between items-center animate-fade-in">
       <div className="text-center md:text-left mb-4 md:mb-0">
-        <h1 className="text-3xl font-bold gradient-text">Welcome, {userName}!</h1>
-        <p className="text-gray-400 mt-1">Here's a quick overview of your tasks:</p>
+        <h1 className="text-3xl font-bold gradient-text">{t('common.welcome')}, {userName}!</h1>
+        <p className="text-gray-400 mt-1">{t('dashboard.overviewMessage')}</p>
       </div>
       <div className="flex flex-wrap justify-center md:justify-end gap-4 w-full md:w-auto">
         <div className="card px-5 py-3 text-center">
           <p className="text-xl font-bold text-red-400">{overdueCount}</p>
-          <p className="text-sm text-gray-400">Overdue</p>
+          <p className="text-sm text-gray-400">{t('dashboard.overdue')}</p>
         </div>
         <div className="card px-5 py-3 text-center">
           <p className="text-xl font-bold text-orange-400">{highPriorityCount}</p>
-          <p className="text-sm text-gray-400">High Priority</p>
+          <p className="text-sm text-gray-400">{t('dashboard.highPriority')}</p>
         </div>
         <div className="card px-5 py-3 text-center">
           <p className="text-xl font-bold text-cyan-400">{otherCount}</p>
-          <p className="text-sm text-gray-400">Other Tasks</p>
+          <p className="text-sm text-gray-400">{t('dashboard.otherTasks')}</p>
         </div>
       </div>
     </header>
@@ -320,73 +325,78 @@ const ErrorMessage = ({ message, onDismiss }: { message: string, onDismiss: () =
 );
 
 // UPDATED: Completely refactored Toolbar for better alignment
-const Toolbar = ({ filter, setFilter, priorityFilter, setPriorityFilter, onNewTask }: any) => (
-  <div className="mb-8 flex flex-col md:flex-row gap-4 justify-between items-center w-full">
-    {/* Left Side: Filter Groups */}
-    <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
-      
-      {/* Status Filter Group */}
-      <div className="glass p-1 rounded-lg flex gap-1"> 
-        {(["all", "pending", "completed"] as const).map(f => (
-          <button 
-            key={f} 
-            onClick={() => setFilter(f)} 
-            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${filter === f ? "bg-indigo-600 text-white shadow-md" : "text-gray-300 hover:bg-white/10"}`}
-          >
-            {f.charAt(0).toUpperCase() + f.slice(1)}
-          </button>
-        ))}
+const Toolbar = ({ filter, setFilter, priorityFilter, setPriorityFilter, onNewTask, t }: any) => {
+  const statusFilters = ["all", "pending", "completed"] as const;
+  const priorityFilters = ["all", "low", "normal", "high"] as const;
+
+  return (
+    <div className="mb-8 flex flex-col md:flex-row gap-4 justify-between items-center w-full">
+      {/* Left Side: Filter Groups */}
+      <div className="flex flex-col sm:flex-row items-center gap-4 w-full md:w-auto">
+
+        {/* Status Filter Group */}
+        <div className="glass p-1 rounded-lg flex gap-1">
+          {statusFilters.map(f => (
+            <button
+              key={f}
+              onClick={() => setFilter(f)}
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${filter === f ? "bg-indigo-600 text-white shadow-md" : "text-gray-300 hover:bg-white/10"}`}
+            >
+              {t(`tasks.${f}`)}
+            </button>
+          ))}
+        </div>
+
+        {/* Priority Filter Group */}
+        <div className="glass p-1 rounded-lg flex gap-1">
+          {priorityFilters.map(p => (
+            <button
+              key={p}
+              onClick={() => setPriorityFilter(p)}
+              className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${priorityFilter === p ? (p === "all" ? "bg-gray-500" : `${PRIORITY_STYLES[p].badge} bg-opacity-100`) : "text-gray-300 hover:bg-white/10"}`}
+            >
+              {p === "all" ? t('tasks.all') : t(`priorities.${p}`)}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Priority Filter Group */}
-      <div className="glass p-1 rounded-lg flex gap-1"> 
-        {(["all", "low", "normal", "high"] as const).map(p => (
-          <button 
-            key={p} 
-            onClick={() => setPriorityFilter(p)} 
-            className={`px-3 py-2 rounded-md text-sm font-medium transition-all ${priorityFilter === p ? (p === "all" ? "bg-gray-500" : `${PRIORITY_STYLES[p].badge} bg-opacity-100`) : "text-gray-300 hover:bg-white/10"}`}
-          >
-            {p.charAt(0).toUpperCase() + p.slice(1)}
-          </button>
-        ))}
-      </div>
+      {/* Right Side: Action Button */}
+      <button
+        onClick={onNewTask}
+        className="w-full md:w-auto btn-primary hover-scale flex justify-center items-center py-2.5 px-6"
+      >
+        {t('tasks.newTask')}
+      </button>
     </div>
+  );
+};
 
-    {/* Right Side: Action Button */}
-    <button 
-      onClick={onNewTask} 
-      className="w-full md:w-auto btn-primary hover-scale flex justify-center items-center py-2.5 px-6"
-    >
-      + New Task
-    </button>
-  </div>
-);
-
-const LoadingSpinner = () => (
+const LoadingSpinner = ({ t }: { t: (key: string) => string }) => (
   <div className="text-center py-12">
     <div className="inline-block spinner-lg"></div>
-    <p className="text-gray-400 mt-4">Loading tasks...</p>
+    <p className="text-gray-400 mt-4">{t('tasks.loadingTasks')}</p>
   </div>
 );
 
-const EmptyState = ({ onNewTask }: { onNewTask: () => void }) => (
+const EmptyState = ({ onNewTask, t }: { onNewTask: () => void; t: (key: string) => string }) => (
   <div className="text-center py-16 glass-dark rounded-2xl shadow-lg border border-white/10 animate-scale-in">
     <div className="text-6xl mb-4 animate-bounce">📝</div>
-    <h3 className="text-2xl font-semibold text-white mb-2">No tasks found</h3>
-    <p className="text-gray-400 mb-6">Let's create your first task!</p>
-    <button onClick={onNewTask} className="btn-primary hover-scale py-2.5 px-6">Create Task</button>
+    <h3 className="text-2xl font-semibold text-white mb-2">{t('tasks.noTasks')}</h3>
+    <p className="text-gray-400 mb-6">{t('tasks.noTasksMessage')}</p>
+    <button onClick={onNewTask} className="btn-primary hover-scale py-2.5 px-6">{t('tasks.createTask')}</button>
   </div>
 );
 
-const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }: { task: Task, onToggleComplete: (task: Task) => void, onEdit: (task: Task) => void, onDelete: (id: number) => void }) => {
+const TaskCard = ({ task, onToggleComplete, onEdit, onDelete, t }: { task: Task, onToggleComplete: (task: Task) => void, onEdit: (task: Task) => void, onDelete: (id: number) => void, t: (key: string) => string }) => {
   const formatDate = (dateString?: string | null) => {
     if (!dateString) return null;
     const date = new Date(dateString);
     const now = new Date();
     const diffDays = Math.ceil((date.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
 
-    if (diffDays < 0) return <span className="font-medium text-red-400">Overdue</span>;
-    if (diffDays === 0) return <span className="font-medium text-orange-400">Today</span>;
+    if (diffDays < 0) return <span className="font-medium text-red-400">{t('tasks.overdue')}</span>;
+    if (diffDays === 0) return <span className="font-medium text-orange-400">{t('tasks.today')}</span>;
     return date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' });
   };
 
@@ -406,10 +416,10 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }: { task: Task, on
           {task.description && <p className="text-sm text-gray-400 mt-1">{task.description}</p>}
           <div className="flex flex-wrap items-center gap-3 mt-3 text-xs">
             <span className={`inline-flex items-center px-3 py-1 rounded-full font-medium ${PRIORITY_STYLES[priority].badge}`}>
-              {priority.charAt(0).toUpperCase() + priority.slice(1)}
+              {t(`priorities.${priority}`)}
             </span>
-            {task.due_date && <span className="text-gray-400">📅 Due: {formatDate(task.due_date)}</span>}
-            <span className="text-gray-500">Created: {new Date(task.created_at).toLocaleDateString()}</span>
+            {task.due_date && <span className="text-gray-400">📅 {t('tasks.due')}: {formatDate(task.due_date)}</span>}
+            <span className="text-gray-500">{t('tasks.created')}: {new Date(task.created_at).toLocaleDateString()}</span>
           </div>
         </div>
       </div>
@@ -420,16 +430,16 @@ const TaskCard = ({ task, onToggleComplete, onEdit, onDelete }: { task: Task, on
           onClick={() => onToggleComplete(task)}
           className={`btn-secondary text-xs px-3 py-1.5 flex-1 ${task.completed ? "!border-yellow-600/50 hover:!bg-yellow-600/30 text-yellow-300" : "!border-green-600/50 hover:!bg-green-600/30 text-green-300"}`}
         >
-          {task.completed ? "Mark Incomplete" : "Mark Complete"}
+          {task.completed ? t('tasks.markIncomplete') : t('tasks.markComplete')}
         </button>
-        <button onClick={() => onEdit(task)} className="btn-secondary text-xs px-3 py-1.5 flex-1">Edit</button>
-        <button onClick={() => { if (confirm("Are you sure?")) onDelete(task.id); }} className="btn-secondary text-xs px-3 py-1.5 flex-1 !border-red-800/50 hover:!bg-red-800/50 text-red-300">Delete</button>
+        <button onClick={() => onEdit(task)} className="btn-secondary text-xs px-3 py-1.5 flex-1">{t('common.edit')}</button>
+        <button onClick={() => { if (confirm(t('tasks.areYouSure'))) onDelete(task.id); }} className="btn-secondary text-xs px-3 py-1.5 flex-1 !border-red-800/50 hover:!bg-red-800/50 text-red-300">{t('common.delete')}</button>
       </div>
     </div>
   );
 };
 
-const TaskDialog = ({ isOpen, onClose, onSave, task, title }: { isOpen: boolean, onClose: () => void, onSave: (data: any) => Promise<void>, task?: Task | null, title: string }) => {
+const TaskDialog = ({ isOpen, onClose, onSave, task, title, t }: { isOpen: boolean, onClose: () => void, onSave: (data: any) => Promise<void>, task?: Task | null, title: string, t: (key: string) => string }) => {
   const [formData, setFormData] = useState({ title: "", description: "", priority_id: 2, due_date: "" }); // 2 = Normal
   const [isSaving, setIsSaving] = useState(false);
 
@@ -470,19 +480,19 @@ const TaskDialog = ({ isOpen, onClose, onSave, task, title }: { isOpen: boolean,
           <div className="flex min-h-full items-center justify-center p-4 text-center">
             <Transition.Child as={Fragment} enter="ease-out duration-300" enterFrom="opacity-0 scale-95" enterTo="opacity-100 scale-100" leave="ease-in duration-200" leaveFrom="opacity-100 scale-100" leaveTo="opacity-0 scale-95">
               <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl glass-dark border border-white/10 p-6 text-left align-middle shadow-xl transition-all">
-                <Dialog.Title as="h3" className="text-2xl font-bold text-white mb-6">{title}</Dialog.Title>
+                <Dialog.Title as="h3" className="text-2xl font-bold text-white mb-6">{task ? t('tasks.editTask') : t('tasks.createNewTask')}</Dialog.Title>
                 <form onSubmit={handleSubmit} className="space-y-4">
-                  <FormInput name="title" label="Title *" value={formData.title} onChange={handleChange} required />
-                  <FormTextArea name="description" label="Description" value={formData.description} onChange={handleChange} />
-                  <FormSelect name="priority_id" label="Priority" value={formData.priority_id} onChange={handleChange}>
-                    <option value="3">🔵 Low</option>
-                    <option value="2">🟡 Normal</option>
-                    <option value="1">🔴 High</option>
+                  <FormInput name="title" label={`${t('tasks.taskTitle')} ${t('tasks.required')}`} value={formData.title} onChange={handleChange} required />
+                  <FormTextArea name="description" label={t('tasks.taskDescription')} value={formData.description} onChange={handleChange} />
+                  <FormSelect name="priority_id" label={t('tasks.priority')} value={formData.priority_id} onChange={handleChange}>
+                    <option value="3">🔵 {t('priorities.low')}</option>
+                    <option value="2">🟡 {t('priorities.normal')}</option>
+                    <option value="1">🔴 {t('priorities.high')}</option>
                   </FormSelect>
-                  <FormInput name="due_date" label="Due Date" type="date" value={formData.due_date} onChange={handleChange} min={new Date().toISOString().split('T')[0]} />
+                  <FormInput name="due_date" label={t('tasks.dueDate')} type="date" value={formData.due_date} onChange={handleChange} min={new Date().toISOString().split('T')[0]} />
                   <div className="flex gap-3 pt-4">
-                    <button type="button" onClick={onClose} className="flex-1 btn-secondary" disabled={isSaving}>Cancel</button>
-                    <button type="submit" className="flex-1 btn-primary" disabled={isSaving}>{isSaving ? "Saving..." : "Save"}</button>
+                    <button type="button" onClick={onClose} className="flex-1 btn-secondary" disabled={isSaving}>{t('common.cancel')}</button>
+                    <button type="submit" className="flex-1 btn-primary" disabled={isSaving}>{isSaving ? t('tasks.saving') : t('common.save')}</button>
                   </div>
                 </form>
               </Dialog.Panel>

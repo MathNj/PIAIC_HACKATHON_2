@@ -11,11 +11,8 @@
 import { getJWT, signOut } from "./auth";
 import type { ApiError, ValidationError } from "./types";
 
-// Backend URL - check environment variable first, then fall back to production URL
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL
-  || (process.env.NODE_ENV === "production"
-    ? "https://backend-mathnjs-projects.vercel.app"
-    : "http://localhost:8000");
+// Backend URL - always use environment variable with production fallback
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.testservers.online";
 
 interface RequestOptions extends RequestInit {
   headers?: Record<string, string>;

@@ -5,7 +5,7 @@
  * JWT validation. Tokens are stored in localStorage for persistence.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000";
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "https://backend.testservers.online";
 
 interface User {
   id: string;

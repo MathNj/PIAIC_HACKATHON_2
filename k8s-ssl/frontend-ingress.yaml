@@ -6,10 +6,6 @@ metadata:
   annotations:
     # Enable cert-manager to automatically provision SSL certificate from Let's Encrypt
     cert-manager.io/cluster-issuer: letsencrypt-prod
-    # Enable HTTPS redirect after certificate is issued
-    nginx.ingress.kubernetes.io/ssl-redirect: "true"
-    # Force HTTPS
-    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 spec:
   # Use nginx ingress controller (newer way)
   ingressClassName: nginx
@@ -17,6 +13,7 @@ spec:
   - hosts:
     - testservers.online
     - www.testservers.online
+    - backend.testservers.online
     # This secret will be automatically created by cert-manager
     secretName: testservers-online-tls
   rules:
@@ -52,5 +49,15 @@ spec:
         backend:
           service:
             name: frontend-service
+            port:
+              number: 80
+  - host: backend.testservers.online
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: backend-service
             port:
               number: 80
