@@ -166,24 +166,67 @@ scopes:
 
 ## Reusable Skills
 
-### generate_helm_chart Skill:
+You have access to the following specialized skills from the `.claude/skills/` library:
 
-When invoked with a microservice specification, you will:
+### k8s-deployer
+**Use Skill tool**: `Skill({ skill: "k8s-deployer" })`
 
-1. Create complete Helm chart directory structure
-2. Generate Chart.yaml with metadata (name, version, description, maintainers)
-3. Create values.yaml with all configurable parameters:
-   - Image repository and tag
-   - Replica count and autoscaling settings
-   - Resource limits and requests
-   - Service type and ports
-   - Ingress configuration
-   - Environment variables and secrets
-   - Persistence configuration
-4. Generate template files with proper templating syntax
-5. Add _helpers.tpl with reusable template functions
-6. Create NOTES.txt with post-deployment instructions
-7. Validate chart syntax with `helm lint` principles
+This skill generates deployment configurations: Docker containers, Kubernetes manifests, and Dapr components. Use for Phase IV/V deployment tasks.
+
+**When to invoke**:
+- User asks to "deploy to Vercel", "containerize this", or "Create K8s manifests"
+- User needs Helm charts for microservices
+- Setting up Kubernetes deployments
+
+**What it provides**:
+1. Production-ready Dockerfiles with multi-stage builds and security best practices
+2. Complete Helm chart directory structure:
+   - `Chart.yaml` with metadata (name, version, description, maintainers)
+   - `values.yaml` with all configurable parameters (image, replicas, resources, ingress, env vars, secrets)
+   - Template files with proper templating syntax
+   - `_helpers.tpl` with reusable template functions
+   - `NOTES.txt` with post-deployment instructions
+3. Docker-compose configurations for local development
+4. `vercel.json` configurations for frontend deployment
+5. Validation with `helm lint` principles
+
+### k8s-troubleshoot
+**Use Skill tool**: `Skill({ skill: "k8s-troubleshoot" })`
+
+This skill diagnoses and fixes Kubernetes deployment issues: pod failures, ImagePullBackOff, CrashLoopBackOff, service connectivity, resource limits, and Dapr sidecar problems.
+
+**When to invoke**:
+- User reports "pod not starting" or "deployment failed"
+- Error messages show ImagePullBackOff, CrashLoopBackOff, or OOMKilled
+- Services not accessible via LoadBalancer or ClusterIP
+- Dapr sidecar not injecting (0/2 or 1/2 pods)
+
+**What it provides**:
+- Systematic diagnostic workflow (check pods → events → logs → config → connectivity → resources)
+- Root cause identification
+- Targeted fixes for common Kubernetes issues
+- Verification steps
+
+### dapr-event-flow
+**Use Skill tool**: `Skill({ skill: "dapr-event-flow" })`
+
+This skill automates Dapr event-driven architecture: configures pub/sub components, implements event publishers, creates subscribers, and tests event flow. Use for Phase V microservices communication.
+
+**When to invoke**:
+- User asks to "publish events" or "subscribe to events"
+- User says "Set up Dapr pub/sub" or "Configure Kafka/Redpanda"
+- Building microservices that need to communicate
+- Testing event-driven workflows
+
+**What it provides**:
+1. Event schema definitions (CloudEvents specification)
+2. Dapr component YAMLs:
+   - Pub/sub components (Kafka/Redpanda)
+   - State store components (Redis)
+3. Publisher implementation in backend endpoints
+4. Subscriber microservice with event handlers
+5. Local and production configurations
+6. Testing and monitoring guidance
 
 ## Quality Assurance
 
