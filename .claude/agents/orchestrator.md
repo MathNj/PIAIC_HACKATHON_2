@@ -35,8 +35,8 @@ You are the Orchestrator, the meta-agent responsible for coordinating specialize
 ## Available Specialist Agents
 
 ### Backend Development
-- **backend-specialist**: FastAPI, SQLModel, JWT auth, database operations, stateless agents
-  - Phase III Skills: chatkit-integrator, conversation-history-manager, stateless-agent-enforcer
+- **backend-specialist**: FastAPI, SQLModel, JWT auth, database operations, stateless agents, OpenAI integration
+  - Phase III Skills: chatkit-integrator, conversation-history-manager, stateless-agent-enforcer, openai-integration, openai-agents-sdk, mcp-server-builder, prompt-engineering
   - General Skills: backend-scaffolder, mcp-tool-maker, agent-orchestrator, crud-builder, fastapi-endpoint-generator
 - **database-migration-specialist**: Alembic migrations, schema changes
   - Skills: db-migration-wizard
@@ -348,6 +348,85 @@ Send single message with:
    - cloudops-engineer: Optimize frontend Dockerfile
    - cloudops-engineer: Optimize notification service Dockerfile
 5. deployment-engineer: Deploy all optimized images to production DOKS
+```
+
+### Pattern 9: AI Agent Creation with MCP Tools (Phase III)
+```
+1. backend-specialist (with prompt-engineering skill):
+   * Design system prompts for AI agent roles
+   * Create few-shot examples for task classification
+   * Optimize prompts for consistent responses
+2. backend-specialist (with openai-agents-sdk skill):
+   * Create stateless agent with database-backed conversation persistence
+   * Implement conversation context loading (load from DB on every request)
+   * Add streaming response support
+   * Ensure NO in-memory conversation state (constitutional requirement)
+3. backend-specialist (with mcp-server-builder skill):
+   * Build MCP server with tool definitions
+   * Expose backend functions as MCP tools (create_task, list_tasks, etc.)
+   * Add tenant isolation (user_id validation on all tools)
+   * Implement MCP resources for data access
+4. backend-specialist (with openai-agents-sdk skill):
+   * Integrate MCP tools with agent
+   * Test agent with tool execution
+   * Add error handling for tool failures
+5. backend-specialist (with stateless-agent-enforcer skill):
+   * Run stateless validation tests
+   * Verify NO instance variables storing state
+   * Test horizontal scaling compatibility
+   * Validate database queries on every request
+6. frontend-specialist (with chatkit-integrator skill):
+   * Integrate OpenAI Chatkit UI
+   * Connect to backend agent endpoints
+   * Implement streaming chat interface
+```
+
+### Pattern 10: OpenAI API Integration (Phase III)
+```
+1. backend-specialist (with openai-integration skill):
+   * Set up OpenAI client with API key configuration
+   * Implement chat completion endpoint (streaming & non-streaming)
+   * Add function calling with tool definitions
+   * Implement error handling (rate limits, timeouts)
+   * Add token counting and cost tracking
+2. backend-specialist (with prompt-engineering skill):
+   * Design system prompts for use cases
+   * Create few-shot examples for accuracy
+   * Implement prompt templates library
+   * Add A/B testing for prompt variants
+3. Parallel (if multiple AI features):
+   - backend-specialist: Implement chat completion API
+   - backend-specialist: Implement embeddings for semantic search
+   - backend-specialist: Implement function calling agents
+4. backend-specialist (with integration-tester skill):
+   * Test OpenAI API integration
+   * Mock OpenAI responses for testing
+   * Validate error handling scenarios
+5. frontend-specialist:
+   * Integrate Next.js with OpenAI chat API
+   * Implement streaming SSE client
+   * Add loading states and error handling
+```
+
+### Pattern 11: Stateless AI Agent Validation (Phase III)
+```
+1. backend-specialist (with stateless-agent-enforcer skill):
+   * Review agent code with compliance checklist
+   * Run static analysis validator on agents/ directory
+   * Identify anti-patterns (in-memory state, class variables)
+2. If violations found:
+   * backend-specialist: Refactor to stateless pattern
+   * Remove in-memory conversation state
+   * Add database queries for context loading
+   * Implement proper tenant isolation
+3. backend-specialist (with stateless-agent-enforcer skill):
+   * Run compliance test suite:
+     - State isolation test (verify no shared state between requests)
+     - Concurrency test (100 parallel requests to same conversation)
+     - Restart test (agent restarts don't lose conversation data)
+     - Load balancing test (requests to different instances work correctly)
+4. Re-run validation until all tests pass
+5. Document compliance in code review / PR
 ```
 
 ## Error Handling

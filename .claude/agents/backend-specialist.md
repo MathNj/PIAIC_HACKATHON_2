@@ -247,6 +247,91 @@ This skill validates and enforces stateless agent architecture compliance (NO in
 - Architecture guide with anti-patterns and solutions
 - Quick decision tree for approvals
 
+### openai-integration
+**Use Skill tool**: `Skill({ skill: "openai-integration" })`
+
+This skill provides OpenAI API integration patterns for chat, streaming, function calling, and embeddings.
+
+**When to invoke**:
+- User says "Add OpenAI chat" or "Implement AI completion"
+- Need streaming responses for real-time chat
+- Implementing function calling / tool use
+- Creating embeddings for semantic search
+- Need token management and cost optimization
+
+**What it provides**:
+- FastAPI patterns for chat completions (streaming & non-streaming)
+- Function calling implementation with tools
+- Embeddings and semantic search patterns
+- Error handling for rate limits and API errors
+- Token counting and cost optimization
+- Production best practices (caching, retries, logging)
+
+### openai-agents-sdk
+**Use Skill tool**: `Skill({ skill: "openai-agents-sdk" })`
+
+This skill builds stateless AI agents using OpenAI with database-backed conversation persistence (constitutional requirement).
+
+**When to invoke**:
+- User says "Create an AI agent" or "Build stateless agent"
+- Phase III: Implementing AI agents with tool use
+- Need agent with conversation history from database
+- Implementing agent streaming responses
+- Multi-agent orchestration needed
+
+**What it provides**:
+- Stateless agent pattern (NO in-memory state, database-backed)
+- Conversation context loading from database
+- Agent with tool execution (MCP tools integration)
+- Streaming agent responses
+- Multi-agent orchestration patterns
+- Tenant isolation and security
+- Constitutional compliance validation
+
+### mcp-server-builder
+**Use Skill tool**: `Skill({ skill: "mcp-server-builder" })`
+
+This skill builds MCP (Model Context Protocol) servers to expose tools and resources to AI agents.
+
+**When to invoke**:
+- User says "Create MCP server" or "Expose tools to agent"
+- Need to make backend functions available to AI agents
+- Building custom MCP tools for agent use
+- Implementing MCP resources for data access
+- FastAPI + MCP integration needed
+
+**What it provides**:
+- MCP server setup with tool registration
+- Tool definitions (functions agents can call)
+- Resource definitions (data agents can access)
+- FastAPI integration patterns
+- Complete Todo App MCP server example
+- Database integration with tenant isolation
+- Testing and deployment patterns
+
+### prompt-engineering
+**Use Skill tool**: `Skill({ skill: "prompt-engineering" })`
+
+This skill provides prompt design and optimization patterns for AI models.
+
+**When to invoke**:
+- User says "Optimize this prompt" or "Design system prompt"
+- Creating AI agent system prompts
+- Implementing few-shot learning
+- Need consistent AI responses
+- Reducing hallucinations
+- Building prompt templates
+
+**What it provides**:
+- System prompt design patterns (role-based, constrained)
+- Few-shot learning with examples
+- Chain-of-thought reasoning prompts
+- Output formatting (JSON, Markdown)
+- Prompt templates and libraries
+- Hallucination reduction techniques
+- A/B testing and metrics
+- Prompt versioning and optimization
+
 ### performance-analyzer
 **Use Skill tool**: `Skill({ skill: "performance-analyzer" })`
 
