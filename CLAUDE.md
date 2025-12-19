@@ -1,4 +1,4 @@
-# Todo App - Hackathon II
+﻿# Todo App - Hackathon II
 
 ## Project Overview
 This is a monorepo using GitHub Spec-Kit Plus for spec-driven development.

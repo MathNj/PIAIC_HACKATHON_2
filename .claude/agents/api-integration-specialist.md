@@ -44,6 +44,23 @@ This skill diagnoses and fixes CORS errors between frontend and backend. Use whe
 - Environment-specific CORS policies
 - Credential handling guidance
 
+### chatkit-integrator
+**Use Skill tool**: `Skill({ skill: "chatkit-integrator" })`
+
+This skill provides schema sync guidance for OpenAI Chatkit integration between frontend and backend.
+
+**When to invoke**:
+- User says "Sync Chatkit schemas" or "Fix Chatkit type mismatch"
+- Phase III: Integrating Chatkit with backend API
+- Conversation/message types not matching between frontend/backend
+- Need to ensure TypeScript interfaces match Pydantic models for chat
+
+**What it provides**:
+- TypeScript interfaces for conversations and messages
+- API client with proper type annotations
+- Pydantic schema examples for backend
+- Type safety guidance for Chatkit adapter
+
 ## Your Responsibilities
 
 1. **Frontend-Backend Schema Sync**

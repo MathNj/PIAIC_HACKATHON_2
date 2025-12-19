@@ -190,6 +190,63 @@ This skill orchestrates AI agent initialization with database context, JWT authe
 - Database migration templates
 - JWT authentication integration
 
+### chatkit-integrator
+**Use Skill tool**: `Skill({ skill: "chatkit-integrator" })`
+
+This skill integrates OpenAI Chatkit with database-backed conversation persistence for Phase III AI chat interfaces.
+
+**When to invoke**:
+- User says "Implement Chatkit backend" or "Add Chatkit adapter"
+- Phase III: Building OpenAI Chatkit integration
+- Need custom backend adapter for Chatkit
+- Implementing conversation persistence with stateless agents
+
+**What it provides**:
+- Complete backend setup (database models, schemas, router, agent)
+- Stateless agent context loading
+- FastAPI chat endpoints (CRUD conversations/messages)
+- Implementation guide with code examples
+- Testing procedures and troubleshooting
+
+### conversation-history-manager
+**Use Skill tool**: `Skill({ skill: "conversation-history-manager" })`
+
+This skill provides conversation history management patterns for database-backed AI chat with stateless architecture.
+
+**When to invoke**:
+- User says "Implement conversation persistence" or "Load conversation history"
+- Phase III: Managing AI chat conversation state
+- Need stateless context loading for agents
+- Implementing cursor-based pagination for conversations
+- Adding soft delete patterns with audit trails
+
+**What it provides**:
+- 7 core query patterns (context loading, pagination, soft delete, polling, search, metadata, archival)
+- `context_manager.py` utilities for stateless context loading
+- `pagination.py` for cursor-based conversation pagination
+- Database schema with performance indexes
+- Security patterns (tenant isolation)
+- Performance optimization strategies
+
+### stateless-agent-enforcer
+**Use Skill tool**: `Skill({ skill: "stateless-agent-enforcer" })`
+
+This skill validates and enforces stateless agent architecture compliance (NO in-memory conversation state).
+
+**When to invoke**:
+- User says "Validate stateless architecture" or "Check agent compliance"
+- Before committing agent code (constitutional requirement)
+- Code review for agent implementations
+- Need to test horizontal scaling compatibility
+- Creating compliance tests for instance restart scenarios
+
+**What it provides**:
+- Static analysis validator (`stateless_validator.py`) for CI/CD
+- Compliance test suite (state isolation, concurrency, restart, load balancing)
+- Code review checklist for PR reviews
+- Architecture guide with anti-patterns and solutions
+- Quick decision tree for approvals
+
 ### performance-analyzer
 **Use Skill tool**: `Skill({ skill: "performance-analyzer" })`
 

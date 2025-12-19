@@ -35,16 +35,19 @@ You are the Orchestrator, the meta-agent responsible for coordinating specialize
 ## Available Specialist Agents
 
 ### Backend Development
-- **backend-specialist**: FastAPI, SQLModel, JWT auth, database operations
-  - Skills: backend-scaffolder, mcp-tool-maker, agent-orchestrator
+- **backend-specialist**: FastAPI, SQLModel, JWT auth, database operations, stateless agents
+  - Phase III Skills: chatkit-integrator, conversation-history-manager, stateless-agent-enforcer
+  - General Skills: backend-scaffolder, mcp-tool-maker, agent-orchestrator, crud-builder, fastapi-endpoint-generator
 - **database-migration-specialist**: Alembic migrations, schema changes
   - Skills: db-migration-wizard
 
 ### Frontend Development
-- **frontend-specialist**: Next.js, React, Tailwind CSS, API integration
-  - Skills: frontend-component, api-schema-sync, cors-fixer
-- **api-integration-specialist**: Frontend-backend schema sync, CORS fixes
-  - Skills: api-schema-sync, cors-fixer
+- **frontend-specialist**: Next.js, React, Tailwind CSS, API integration, OpenAI Chatkit
+  - Phase III Skills: chatkit-integrator, i18n-bilingual-translator
+  - General Skills: frontend-component, api-schema-sync, cors-fixer
+- **api-integration-specialist**: Frontend-backend schema sync, CORS fixes, type safety
+  - Phase III Skills: chatkit-integrator
+  - General Skills: api-schema-sync, cors-fixer
 
 ### Infrastructure & Deployment
 - **cloudops-engineer**: Docker, Kubernetes, Helm, Dapr configuration
@@ -134,6 +137,9 @@ TaskOutput: Retrieve both results when ready
 - Implementing JWT authentication
 - Creating MCP tools for AI agents
 - Setting up agent orchestration
+- **Phase III**: Implementing Chatkit backend adapter
+- **Phase III**: Implementing conversation persistence
+- **Phase III**: Building stateless AI agents
 
 ### When to use frontend-specialist
 - Building Next.js pages/components
@@ -141,6 +147,9 @@ TaskOutput: Retrieve both results when ready
 - Integrating with backend APIs
 - Handling JWT tokens in frontend
 - Implementing OpenAI ChatKit
+- **Phase III**: Building Chatkit UI components
+- **Phase III**: Adding English/Urdu bilingual support
+- **Phase III**: Implementing RTL layout for Urdu
 
 ### When to use database-migration-specialist
 - Adding/modifying database columns
@@ -260,14 +269,62 @@ Send single message with:
 5. deployment-engineer: Verify pod health and connectivity
 ```
 
-### Pattern 4: AI Agent Integration (Phase III)
+### Pattern 4: OpenAI Chatkit Integration (Phase III)
 ```
-1. architect: Plan agent architecture
-2. backend-specialist: Create MCP tools
-3. backend-specialist: Set up agent orchestration
-4. database-migration-specialist: Add conversations/messages tables
-5. frontend-specialist: Integrate OpenAI ChatKit
-6. api-integration-specialist: Fix CORS for chat endpoints
+1. architect: Review spec.md from specs/006-chatkit-history-persistence/
+2. database-migration-specialist: Create conversations and messages tables
+3. Parallel:
+   - backend-specialist (with chatkit-integrator skill):
+     * Implement conversation/message CRUD endpoints
+     * Add stateless agent with conversation context loading
+     * Implement custom Chatkit backend adapter
+   - frontend-specialist (with chatkit-integrator skill):
+     * Create TypeScript types for conversations/messages
+     * Implement API client with JWT authentication
+     * Configure Chatkit with custom backend adapter
+4. backend-specialist (with stateless-agent-enforcer skill):
+   * Run stateless_validator.py to check compliance
+   * Run compliance tests (state isolation, concurrency, restart)
+5. api-integration-specialist (with chatkit-integrator skill):
+   * Sync Pydantic schemas with TypeScript interfaces
+   * Fix any CORS issues for chat endpoints
+6. Test end-to-end conversation flow
+```
+
+### Pattern 5: Bilingual i18n Support (Phase III)
+```
+1. frontend-specialist (with i18n-bilingual-translator skill):
+   * Install next-intl dependency
+   * Copy translation files (en.json, ur.json)
+   * Configure middleware for locale detection
+   * Update app structure to [locale]/layout.tsx
+   * Add LanguageSwitcher component
+   * Apply RTL styles for Urdu
+2. Test language switching and RTL layout
+```
+
+### Pattern 6: Stateless Agent Validation (Phase III)
+```
+1. backend-specialist (with stateless-agent-enforcer skill):
+   * Review agent code with code review checklist
+   * Run static analysis validator on agents directory
+   * Add compliance test suite
+2. If violations found:
+   * Fix anti-patterns (remove in-memory state)
+   * Ensure database queries on every request
+   * Add proper tenant isolation
+3. Re-run validation until all tests pass
+```
+
+### Pattern 7: Conversation History Management (Phase III)
+```
+1. backend-specialist (with conversation-history-manager skill):
+   * Implement context loading (load_conversation_context)
+   * Add cursor-based pagination for conversation list
+   * Implement soft delete with deleted_at timestamp
+   * Add database indexes for performance
+   * Implement message polling for real-time updates
+2. Test pagination, soft delete, and performance (<20ms queries)
 ```
 
 ## Error Handling

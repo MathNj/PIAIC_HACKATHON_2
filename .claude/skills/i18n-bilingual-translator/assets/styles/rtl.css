@@ -1,0 +1,242 @@
+/* RTL (Right-to-Left) styles for Urdu language support
+ * Copy this file to: frontend/src/styles/rtl.css
+ * Import in layout: import '@/styles/rtl.css'
+ */
+
+/* Urdu-specific typography */
+[dir="rtl"] {
+  /* Use Noto Nastaliq Urdu font for better Urdu rendering */
+  font-family: 'Noto Nastaliq Urdu', 'Jameel Noori Nastaleeq', 'Alvi Nastaleeq', serif;
+
+  /* Increase line height for better Urdu readability */
+  line-height: 1.8;
+
+  /* Slightly larger font for Urdu characters */
+  font-size: 1.05em;
+
+  /* Better letter spacing for Urdu */
+  letter-spacing: 0.01em;
+}
+
+/* Fix Tailwind utilities that don't have RTL equivalents */
+[dir="rtl"] .float-left {
+  float: right;
+}
+
+[dir="rtl"] .float-right {
+  float: left;
+}
+
+[dir="rtl"] .clear-left {
+  clear: right;
+}
+
+[dir="rtl"] .clear-right {
+  clear: left;
+}
+
+/* Text alignment fixes */
+[dir="rtl"] .text-left {
+  text-align: right;
+}
+
+[dir="rtl"] .text-right {
+  text-align: left;
+}
+
+/* Border radius mirroring */
+[dir="rtl"] .rounded-l {
+  border-top-left-radius: 0;
+  border-bottom-left-radius: 0;
+  border-top-right-radius: 0.25rem;
+  border-bottom-right-radius: 0.25rem;
+}
+
+[dir="rtl"] .rounded-r {
+  border-top-right-radius: 0;
+  border-bottom-right-radius: 0;
+  border-top-left-radius: 0.25rem;
+  border-bottom-left-radius: 0.25rem;
+}
+
+[dir="rtl"] .rounded-tl {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0.25rem;
+}
+
+[dir="rtl"] .rounded-tr {
+  border-top-right-radius: 0;
+  border-top-left-radius: 0.25rem;
+}
+
+[dir="rtl"] .rounded-bl {
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0.25rem;
+}
+
+[dir="rtl"] .rounded-br {
+  border-bottom-right-radius: 0;
+  border-bottom-left-radius: 0.25rem;
+}
+
+/* Transform mirroring for icons and elements */
+[dir="rtl"] .rotate-icon {
+  transform: scaleX(-1);
+}
+
+/* Chat message alignment */
+[dir="rtl"] .chat-message-user {
+  margin-left: auto;
+  margin-right: 0;
+}
+
+[dir="rtl"] .chat-message-assistant {
+  margin-left: 0;
+  margin-right: auto;
+}
+
+/* Navigation menu RTL */
+[dir="rtl"] .nav-menu {
+  padding-left: 0;
+  padding-right: 1rem;
+}
+
+[dir="rtl"] .nav-item {
+  text-align: right;
+}
+
+/* Form input RTL */
+[dir="rtl"] input[type="text"],
+[dir="rtl"] input[type="email"],
+[dir="rtl"] input[type="password"],
+[dir="rtl"] textarea {
+  text-align: right;
+  direction: rtl;
+}
+
+/* Placeholder text in RTL */
+[dir="rtl"] input::placeholder,
+[dir="rtl"] textarea::placeholder {
+  text-align: right;
+}
+
+/* Scrollbar on left side for RTL */
+[dir="rtl"] {
+  scrollbar-gutter: stable both-edges;
+}
+
+/* Badge and chip positioning */
+[dir="rtl"] .badge-top-right {
+  left: 0;
+  right: auto;
+}
+
+[dir="rtl"] .badge-top-left {
+  right: 0;
+  left: auto;
+}
+
+/* Dropdown menu alignment */
+[dir="rtl"] .dropdown-menu {
+  left: auto;
+  right: 0;
+}
+
+/* Modal and dialog RTL */
+[dir="rtl"] .modal-content {
+  text-align: right;
+}
+
+/* Table RTL */
+[dir="rtl"] table {
+  direction: rtl;
+}
+
+[dir="rtl"] th,
+[dir="rtl"] td {
+  text-align: right;
+}
+
+/* List RTL */
+[dir="rtl"] ul,
+[dir="rtl"] ol {
+  padding-left: 0;
+  padding-right: 2rem;
+}
+
+/* Checkbox and radio RTL */
+[dir="rtl"] input[type="checkbox"],
+[dir="rtl"] input[type="radio"] {
+  margin-left: 0.5rem;
+  margin-right: 0;
+}
+
+/* Breadcrumb RTL */
+[dir="rtl"] .breadcrumb-separator::before {
+  content: "←";
+}
+
+/* Tooltip RTL */
+[dir="rtl"] .tooltip {
+  text-align: right;
+}
+
+/* Code blocks - keep LTR for code */
+[dir="rtl"] pre,
+[dir="rtl"] code {
+  direction: ltr;
+  text-align: left;
+  font-family: 'Courier New', monospace;
+}
+
+/* Ensure English text in Urdu context stays LTR */
+[dir="rtl"] .ltr-text {
+  direction: ltr;
+  text-align: left;
+}
+
+/* Animation adjustments for RTL */
+[dir="rtl"] .slide-in-left {
+  animation-name: slideInRight;
+}
+
+[dir="rtl"] .slide-in-right {
+  animation-name: slideInLeft;
+}
+
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Print styles for RTL */
+@media print {
+  [dir="rtl"] {
+    text-align: right;
+  }
+
+  [dir="rtl"] .print-ltr {
+    direction: ltr;
+    text-align: left;
+  }
+}
+
+/* Responsive RTL adjustments */
+@media (max-width: 768px) {
+  [dir="rtl"] {
+    font-size: 1em; /* Reset font size on mobile */
+  }
+}
