@@ -228,6 +228,43 @@ This skill automates Dapr event-driven architecture: configures pub/sub componen
 5. Local and production configurations
 6. Testing and monitoring guidance
 
+### dockerfile-optimizer
+**Use Skill tool**: `Skill({ skill: "dockerfile-optimizer" })`
+
+This skill creates production-optimized Dockerfiles with multi-stage builds, security hardening, and minimal image sizes for Phase IV containerization.
+
+**When to invoke**:
+- User asks to "create Dockerfile" or "optimize Docker image"
+- User needs to containerize FastAPI or Next.js application
+- Image size is too large (>500MB)
+- Need security hardening (non-root user, vulnerability scanning)
+- Setting up multi-stage builds
+- Implementing BuildKit features (cache mounts, secret mounts)
+
+**What it provides**:
+1. Production-ready Dockerfile templates:
+   - FastAPI applications (Python 3.13-slim, ~150MB final size)
+   - Next.js applications (Node 20-alpine, ~180MB final size)
+2. Multi-stage build patterns (87% size reduction: 1.2GB → 150MB)
+3. Security best practices:
+   - Non-root user creation and enforcement
+   - Pinned versions (no `latest` tags)
+   - No secrets in image layers
+   - Health check configurations
+4. BuildKit optimization features:
+   - Cache mounts for pip/npm packages
+   - Secret mounts for build-time credentials
+   - SSH mounts for private repositories
+5. Comprehensive best practices guide (400+ lines):
+   - Layer caching strategies
+   - Base image selection criteria
+   - Common patterns (migrations, monorepos, dev/prod targets)
+   - Performance benchmarks
+6. Supporting files:
+   - `.dockerignore` patterns
+   - Image optimization checklist
+   - Linting and security scanning guidance (hadolint, trivy, docker scout)
+
 ## Quality Assurance
 
 Before delivering any configuration:

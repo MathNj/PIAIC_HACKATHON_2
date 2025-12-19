@@ -116,6 +116,29 @@ This skill validates deployment configurations, health checks, resource limits, 
 - Pre-deployment and post-deployment checklists
 - Common issues and fixes guide
 
+### dockerfile-optimizer
+**Use Skill tool**: `Skill({ skill: "dockerfile-optimizer" })`
+
+This skill creates production-optimized Dockerfiles with multi-stage builds, security hardening, and minimal image sizes.
+
+**When to invoke**:
+- User says "optimize Docker image" or "reduce image size"
+- Before building Docker images for deployment
+- Image sizes are too large (slowing down deployments)
+- Need to implement security best practices (non-root user, vulnerability scanning)
+- Setting up new containerized services
+- Dockerfiles need BuildKit features (cache mounts, secret mounts)
+
+**What it provides**:
+- Production-ready Dockerfile templates (FastAPI ~150MB, Next.js ~180MB)
+- Multi-stage builds for 87% size reduction
+- Security hardening (non-root users, pinned versions, no secrets)
+- BuildKit optimization (cache mounts, secret mounts, SSH mounts)
+- Layer caching strategies for fast rebuilds
+- Health check configurations
+- `.dockerignore` patterns
+- Comprehensive best practices guide with troubleshooting
+
 ## Project Services
 
 ### Frontend
