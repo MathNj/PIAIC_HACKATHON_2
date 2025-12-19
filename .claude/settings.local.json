@@ -73,7 +73,10 @@
       "Bash(move /Y chatkit-integrator.zip chatkit-integrator.skill)",
       "Bash(powershell -Command \"Compress-Archive -Path ''chatkit-integrator\\\\*'' -DestinationPath ''chatkit-integrator.zip'' -Force; Move-Item -Path ''chatkit-integrator.zip'' -Destination ''chatkit-integrator.skill'' -Force\")",
       "Bash(powershell -Command \"Compress-Archive -Path ''i18n-bilingual-translator\\\\*'' -DestinationPath ''i18n-bilingual-translator.zip'' -Force; Move-Item -Path ''i18n-bilingual-translator.zip'' -Destination ''i18n-bilingual-translator.skill'' -Force\")",
-      "Bash(powershell -Command:*)"
+      "Bash(powershell -Command:*)",
+      "Bash(gh pr create:*)",
+      "Bash(gh pr merge:*)",
+      "Bash(git merge:*)"
     ],
     "deny": [],
     "ask": []
