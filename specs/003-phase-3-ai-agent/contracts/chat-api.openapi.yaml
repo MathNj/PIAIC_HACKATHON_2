@@ -1,0 +1,600 @@
+openapi: 3.1.0
+info:
+  title: AI Chat Agent API
+  version: 3.0.0
+  description: |
+    Phase III AI Chat Agent API for natural language task management.
+
+    Enables users to interact with an AI assistant that can create, update,
+    and manage TODO tasks through conversational interface. All conversation
+    history is persisted in the database, and the agent is completely stateless.
+
+    **Authentication**: All endpoints require JWT Bearer token.
+    **Multi-User Isolation**: User ID in path must match authenticated user.
+
+  contact:
+    name: API Support
+    email: support@todoapp.com
+
+servers:
+  - url: https://api.todoapp.com
+    description: Production server
+  - url: http://localhost:8000
+    description: Local development server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /api/{user_id}/chat:
+    post:
+      summary: Send message to AI agent
+      description: |
+        Send a message to the AI chat agent. The agent can create, update, list,
+        and delete tasks using MCP tools. Conversation history is loaded from the
+        database on every request (stateless agent).
+
+        **Behavior**:
+        - If `conversation_id` is null: Creates new conversation
+        - If `conversation_id` is provided: Continues existing conversation
+
+        **Agent Capabilities**:
+        - Create tasks from natural language ("Buy groceries tomorrow")
+        - List tasks with filtering ("Show me my urgent tasks")
+        - Update task properties ("Mark task 123 as complete")
+        - Delete tasks ("Remove task 456")
+        - Provide task prioritization suggestions
+
+      operationId: sendChatMessage
+      tags:
+        - Chat
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the authenticated user (must match JWT token)
+          example: "550e8400-e29b-41d4-a716-446655440000"
+
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChatRequest'
+            examples:
+              newConversation:
+                summary: Start new conversation
+                value:
+                  conversation_id: null
+                  message: "Create a task to buy groceries tomorrow"
+              continueConversation:
+                summary: Continue existing conversation
+                value:
+                  conversation_id: 123
+                  message: "Actually, make that high priority"
+              listTasks:
+                summary: Request task list
+                value:
+                  conversation_id: 123
+                  message: "Show me all my pending tasks"
+
+      responses:
+        '200':
+          description: Agent response with tool executions
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ChatResponse'
+              examples:
+                taskCreated:
+                  summary: Agent created a task
+                  value:
+                    conversation_id: 123
+                    message:
+                      id: 456
+                      role: "assistant"
+                      content: "I've created a high-priority task 'Buy groceries' with a due date of tomorrow (2025-12-08). The task has been added to your list."
+                      created_at: "2025-12-07T10:30:00Z"
+                    tool_calls:
+                      - tool: "create_task"
+                        arguments:
+                          title: "Buy groceries"
+                          priority: "high"
+                          due_date: "2025-12-08"
+                        result:
+                          id: 789
+                          title: "Buy groceries"
+                          priority: "high"
+                          due_date: "2025-12-08"
+                          completed: false
+                taskList:
+                  summary: Agent listed tasks
+                  value:
+                    conversation_id: 123
+                    message:
+                      id: 457
+                      role: "assistant"
+                      content: "You have 3 pending tasks:\n1. Buy groceries (high priority, due tomorrow)\n2. Review pull request (normal priority, due Dec 10)\n3. Update documentation (low priority, no due date)"
+                      created_at: "2025-12-07T10:31:00Z"
+                    tool_calls:
+                      - tool: "list_tasks"
+                        arguments:
+                          status: "pending"
+                        result: "[{\"id\":789,\"title\":\"Buy groceries\",\"priority\":\"high\",\"due_date\":\"2025-12-08\"}]"
+
+        '400':
+          description: Bad request (validation error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                missingMessage:
+                  value:
+                    detail: "Field 'message' is required"
+                invalidConversationId:
+                  value:
+                    detail: "conversation_id must be a positive integer or null"
+
+        '401':
+          description: Unauthorized (missing or invalid JWT)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                detail: "Authentication required"
+
+        '403':
+          description: Forbidden (user_id mismatch or conversation belongs to different user)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                userIdMismatch:
+                  value:
+                    detail: "user_id in path does not match authenticated user"
+                conversationOwnership:
+                  value:
+                    detail: "Conversation 123 not found or belongs to different user"
+
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              example:
+                detail: "Conversation 123 not found"
+
+        '500':
+          description: Internal server error (agent execution failure, database error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                agentError:
+                  value:
+                    detail: "Agent execution failed: OpenAI API timeout"
+                databaseError:
+                  value:
+                    detail: "Database connection error"
+
+  /api/{user_id}/conversations:
+    get:
+      summary: List user's conversations
+      description: |
+        Retrieve a paginated list of conversations for the authenticated user,
+        ordered by most recently updated first.
+
+      operationId: listConversations
+      tags:
+        - Conversations
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+          description: UUID of the authenticated user
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+          description: Number of conversations to return
+        - name: offset
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+            default: 0
+          description: Number of conversations to skip
+
+      responses:
+        '200':
+          description: List of conversations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationList'
+              example:
+                conversations:
+                  - id: 123
+                    title: "Task Management - Dec 7"
+                    message_count: 15
+                    created_at: "2025-12-07T10:00:00Z"
+                    updated_at: "2025-12-07T11:30:00Z"
+                    last_message_preview: "I've updated the task priority to high."
+                  - id: 122
+                    title: "Grocery Planning"
+                    message_count: 8
+                    created_at: "2025-12-06T14:00:00Z"
+                    updated_at: "2025-12-06T15:00:00Z"
+                    last_message_preview: "I've added 3 grocery items to your tasks."
+                total: 42
+                limit: 20
+                offset: 0
+
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+
+  /api/{user_id}/conversations/{conversation_id}/messages:
+    get:
+      summary: Get conversation message history
+      description: |
+        Retrieve all messages in a conversation with optional pagination.
+        Messages are returned in chronological order (oldest first).
+
+      operationId: getConversationMessages
+      tags:
+        - Conversations
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: integer
+        - name: limit
+          in: query
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 200
+            default: 50
+          description: Number of messages to return
+        - name: before_id
+          in: query
+          required: false
+          schema:
+            type: integer
+          description: Return messages before this message ID (for pagination)
+
+      responses:
+        '200':
+          description: Message history
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageHistory'
+              example:
+                conversation_id: 123
+                messages:
+                  - id: 1
+                    role: "user"
+                    content: "Show me my tasks"
+                    tool_calls: null
+                    created_at: "2025-12-07T10:00:00Z"
+                  - id: 2
+                    role: "assistant"
+                    content: "You have 5 tasks: 3 pending and 2 completed."
+                    tool_calls: "[{\"tool\":\"list_tasks\",\"result\":\"...\"}]"
+                    created_at: "2025-12-07T10:00:01Z"
+                  - id: 3
+                    role: "user"
+                    content: "Create a task to buy groceries"
+                    tool_calls: null
+                    created_at: "2025-12-07T10:01:00Z"
+
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/{user_id}/conversations/{conversation_id}:
+    delete:
+      summary: Delete conversation
+      description: |
+        Permanently delete a conversation and all its messages.
+        This action cannot be undone.
+
+      operationId: deleteConversation
+      tags:
+        - Conversations
+      parameters:
+        - name: user_id
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: conversation_id
+          in: path
+          required: true
+          schema:
+            type: integer
+
+      responses:
+        '200':
+          description: Conversation deleted
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  detail:
+                    type: string
+                    example: "Conversation and all messages deleted"
+
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from authentication endpoint
+
+  schemas:
+    ChatRequest:
+      type: object
+      required:
+        - message
+      properties:
+        conversation_id:
+          type: integer
+          nullable: true
+          description: ID of existing conversation, or null to start new conversation
+          example: 123
+        message:
+          type: string
+          minLength: 1
+          maxLength: 10000
+          description: User's message to the agent
+          example: "Create a task to buy groceries tomorrow"
+
+    ChatResponse:
+      type: object
+      required:
+        - conversation_id
+        - message
+        - tool_calls
+      properties:
+        conversation_id:
+          type: integer
+          description: ID of the conversation (newly created or existing)
+          example: 123
+        message:
+          $ref: '#/components/schemas/Message'
+        tool_calls:
+          type: array
+          description: List of tools executed by the agent
+          items:
+            $ref: '#/components/schemas/ToolCall'
+
+    Message:
+      type: object
+      required:
+        - id
+        - role
+        - content
+        - created_at
+      properties:
+        id:
+          type: integer
+          description: Unique message ID
+          example: 456
+        role:
+          type: string
+          enum: [user, assistant, system]
+          description: Role of the message sender
+          example: "assistant"
+        content:
+          type: string
+          description: Message content (text)
+          example: "I've created a task for you."
+        created_at:
+          type: string
+          format: date-time
+          description: Message creation timestamp
+          example: "2025-12-07T10:30:00Z"
+
+    ToolCall:
+      type: object
+      required:
+        - tool
+        - arguments
+        - result
+      properties:
+        tool:
+          type: string
+          description: Name of the MCP tool executed
+          example: "create_task"
+        arguments:
+          type: object
+          description: Arguments passed to the tool
+          example:
+            title: "Buy groceries"
+            priority: "high"
+            due_date: "2025-12-08"
+        result:
+          description: Tool execution result (type varies by tool)
+          oneOf:
+            - type: object
+            - type: string
+          example:
+            id: 789
+            title: "Buy groceries"
+            created: true
+
+    ConversationList:
+      type: object
+      required:
+        - conversations
+        - total
+        - limit
+        - offset
+      properties:
+        conversations:
+          type: array
+          items:
+            $ref: '#/components/schemas/ConversationSummary'
+        total:
+          type: integer
+          description: Total number of conversations for this user
+          example: 42
+        limit:
+          type: integer
+          example: 20
+        offset:
+          type: integer
+          example: 0
+
+    ConversationSummary:
+      type: object
+      required:
+        - id
+        - message_count
+        - created_at
+        - updated_at
+      properties:
+        id:
+          type: integer
+          example: 123
+        title:
+          type: string
+          nullable: true
+          maxLength: 200
+          description: Auto-generated conversation title
+          example: "Task Management - Dec 7"
+        message_count:
+          type: integer
+          description: Number of messages in this conversation
+          example: 15
+        created_at:
+          type: string
+          format: date-time
+          example: "2025-12-07T10:00:00Z"
+        updated_at:
+          type: string
+          format: date-time
+          example: "2025-12-07T11:30:00Z"
+        last_message_preview:
+          type: string
+          nullable: true
+          description: Preview of the last message (first 100 chars)
+          example: "I've updated the task priority..."
+
+    MessageHistory:
+      type: object
+      required:
+        - conversation_id
+        - messages
+      properties:
+        conversation_id:
+          type: integer
+          example: 123
+        messages:
+          type: array
+          items:
+            type: object
+            required:
+              - id
+              - role
+              - content
+              - created_at
+            properties:
+              id:
+                type: integer
+              role:
+                type: string
+                enum: [user, assistant, system]
+              content:
+                type: string
+              tool_calls:
+                type: string
+                nullable: true
+                description: JSON string of tool executions
+              created_at:
+                type: string
+                format: date-time
+
+    Error:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Human-readable error message
+          example: "Authentication required"
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized - Missing or invalid JWT token
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            detail: "Authentication required"
+
+    ForbiddenError:
+      description: Forbidden - user_id mismatch or resource belongs to different user
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            detail: "user_id in path does not match authenticated user"
+
+tags:
+  - name: Chat
+    description: AI agent chat operations
+  - name: Conversations
+    description: Conversation management and history

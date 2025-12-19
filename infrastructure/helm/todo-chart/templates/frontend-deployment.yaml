@@ -1,0 +1,74 @@
+{{- if .Values.frontend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: frontend
+  labels:
+    {{- include "todo-chart.frontendLabels" . | nindent 4 }}
+  annotations:
+    {{- include "todo-chart.aiOpsAnnotations" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.frontend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "todo-chart.selectorLabels" . | nindent 6 }}
+      tier: frontend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        {{- include "todo-chart.frontendLabels" . | nindent 8 }}
+      annotations:
+        {{- include "todo-chart.aiOpsAnnotations" . | nindent 8 }}
+    spec:
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+      - name: frontend
+        image: "{{ .Values.frontend.image.repository }}:{{ .Values.frontend.image.tag }}"
+        imagePullPolicy: {{ .Values.frontend.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.frontend.service.targetPort }}
+          protocol: TCP
+        env:
+        - name: NODE_ENV
+          value: "production"
+        - name: PORT
+          value: {{ .Values.frontend.service.targetPort | quote }}
+        - name: HOSTNAME
+          value: "0.0.0.0"
+        resources:
+          {{- toYaml .Values.frontend.resources | nindent 10 }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.frontend.healthProbes.readiness.path }}
+            port: {{ .Values.frontend.healthProbes.readiness.port }}
+          initialDelaySeconds: {{ .Values.frontend.healthProbes.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.frontend.healthProbes.readiness.periodSeconds }}
+          timeoutSeconds: {{ .Values.frontend.healthProbes.readiness.timeoutSeconds }}
+          successThreshold: {{ .Values.frontend.healthProbes.readiness.successThreshold }}
+          failureThreshold: {{ .Values.frontend.healthProbes.readiness.failureThreshold }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.frontend.healthProbes.liveness.path }}
+            port: {{ .Values.frontend.healthProbes.liveness.port }}
+          initialDelaySeconds: {{ .Values.frontend.healthProbes.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.frontend.healthProbes.liveness.periodSeconds }}
+          timeoutSeconds: {{ .Values.frontend.healthProbes.liveness.timeoutSeconds }}
+          successThreshold: {{ .Values.frontend.healthProbes.liveness.successThreshold }}
+          failureThreshold: {{ .Values.frontend.healthProbes.liveness.failureThreshold }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1001
+{{- end }}

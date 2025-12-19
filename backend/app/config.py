@@ -1,40 +1,54 @@
 """
 Application configuration management.
 
-Loads environment variables using Pydantic Settings.
+Reads environment variables directly using os.environ.
 All sensitive configuration (DATABASE_URL, secrets) must be in environment variables.
 """
 
-from pydantic import BaseSettings
+import os
+import sys
+from pathlib import Path
+from dotenv import load_dotenv
+
+# Load .env file for local development only
+# Don't override system environment variables (Vercel uses system env vars)
+load_dotenv(override=False)
 
 
-class Settings(BaseSettings):
+class Settings:
     """
     Application settings loaded from environment variables.
 
-    Environment variables can be set in:
-    - .env file in backend/ directory
-    - System environment variables
-    - Docker/deployment environment
+    Uses direct os.environ.get() instead of Pydantic for maximum compatibility
+    with Vercel and other deployment platforms.
     """
 
-    # Database configuration
-    DATABASE_URL: str
+    def __init__(self):
+        # Database configuration (required)
+        self.DATABASE_URL = os.environ.get("DATABASE_URL", "")
 
-    # Authentication secrets
-    BETTER_AUTH_SECRET: str
+        # Authentication secrets (required)
+        self.BETTER_AUTH_SECRET = os.environ.get("BETTER_AUTH_SECRET", "")
 
-    # Application settings
-    APP_NAME: str = "TODO API"
-    DEBUG: bool = False
+        # Application settings
+        self.APP_NAME = os.environ.get("APP_NAME", "TODO API")
+        self.DEBUG = os.environ.get("DEBUG", "false").lower() in ("true", "1", "yes")
 
-    # CORS settings (frontend URL)
-    FRONTEND_URL: str = "http://localhost:3000"
+        # CORS settings (frontend URL)
+        self.FRONTEND_URL = os.environ.get("FRONTEND_URL", "http://localhost:3000")
 
-    class Config:
-        env_file = ".env"
-        env_file_encoding = "utf-8"
-        case_sensitive = True
+        # OpenAI API Key (Phase III)
+        self.OPENAI_API_KEY = os.environ.get("OPENAI_API_KEY", "")
+
+        # Gemini API Key (Phase III - AI Agent)
+        self.GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY")
+
+        # Debug logging for Vercel deployments
+        if os.environ.get("VERCEL") or "vercel" in os.environ.get("VERCEL_URL", "").lower():
+            print(f"[CONFIG] Running on Vercel", file=sys.stderr)
+            print(f"[CONFIG] DATABASE_URL: {'SET' if self.DATABASE_URL else 'MISSING'}", file=sys.stderr)
+            print(f"[CONFIG] GEMINI_API_KEY: {'SET' if self.GEMINI_API_KEY else 'MISSING'}", file=sys.stderr)
+            print(f"[CONFIG] BETTER_AUTH_SECRET: {'SET' if self.BETTER_AUTH_SECRET else 'MISSING'}", file=sys.stderr)
 
 
 # Global settings instance
@@ -54,6 +68,11 @@ def validate_settings() -> None:
         raise ValueError("BETTER_AUTH_SECRET must be at least 32 characters")
 
     print(f"[OK] Configuration loaded successfully")
-    print(f"  - Database: {settings.DATABASE_URL.split('@')[1] if '@' in settings.DATABASE_URL else 'configured'}")
+    # Safe printing of database URL (hiding credentials)
+    db_host = "configured"
+    if '@' in settings.DATABASE_URL:
+        db_host = settings.DATABASE_URL.split('@')[1]
+    
+    print(f"  - Database: {db_host}")
     print(f"  - Frontend URL: {settings.FRONTEND_URL}")
     print(f"  - Debug mode: {settings.DEBUG}")

@@ -8,7 +8,7 @@ Schemas:
 """
 
 from datetime import datetime
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, EmailStr, Field, ConfigDict
 
 
 class UserCreate(BaseModel):
@@ -17,14 +17,15 @@ class UserCreate(BaseModel):
     name: str = Field(..., min_length=1, max_length=100, description="User's display name")
     password: str = Field(..., min_length=8, description="Password (min 8 characters)")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "email": "user@example.com",
                 "name": "John Doe",
                 "password": "SecurePass123"
             }
         }
+    )
 
 
 class UserLogin(BaseModel):
@@ -32,13 +33,14 @@ class UserLogin(BaseModel):
     email: EmailStr = Field(..., description="User's email address")
     password: str = Field(..., description="User's password")
 
-    class Config:
-        schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "email": "user@example.com",
                 "password": "SecurePass123"
             }
         }
+    )
 
 
 class UserResponse(BaseModel):
@@ -48,9 +50,9 @@ class UserResponse(BaseModel):
     name: str = Field(..., description="User's display name")
     created_at: datetime = Field(..., description="Account creation timestamp")
 
-    class Config:
-        orm_mode = True  # Enable ORM mode for SQLModel compatibility (Pydantic v1)
-        schema_extra = {
+    model_config = ConfigDict(
+        from_attributes=True,  # Enable ORM mode for SQLModel compatibility (Pydantic v2)
+        json_schema_extra={
             "example": {
                 "id": "550e8400-e29b-41d4-a716-446655440000",
                 "email": "user@example.com",
@@ -58,3 +60,4 @@ class UserResponse(BaseModel):
                 "created_at": "2025-12-06T10:00:00Z"
             }
         }
+    )

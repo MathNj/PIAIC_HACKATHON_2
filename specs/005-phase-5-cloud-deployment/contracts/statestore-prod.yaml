@@ -1,0 +1,196 @@
+# Dapr Redis State Store Component - Production Configuration
+# Phase 5 Component 4: Cloud Deployment (DOKS + DO Managed Redis)
+#
+# This component configures Dapr to connect to DigitalOcean Managed Redis with:
+# - TLS encryption (required for DO Managed Redis)
+# - Credentials injected from Kubernetes Secret via secretKeyRef
+# - TTL for conversation state caching
+#
+# Prerequisites:
+#   1. DigitalOcean Managed Redis cluster provisioned
+#   2. Kubernetes Secret "redis-credentials" created
+#   3. Dapr control plane installed on DOKS cluster
+#
+# Usage:
+#   kubectl apply -f statestore-prod.yaml
+
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+  namespace: default
+  labels:
+    app: todo-app
+    component: state-store
+    environment: production
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+  # ========== Connection Configuration ==========
+  # Redis host - injected from Kubernetes Secret
+  # Format: <cluster-name>-do-user-<id>-0.db.ondigitalocean.com:25061
+  - name: redisHost
+    secretKeyRef:
+      name: redis-credentials
+      key: redis-host
+
+  # Redis port (DO Managed Redis TLS port: 25061)
+  # Note: Concatenated with redisHost above if port is in separate key
+  # If host includes port (host:port), omit this parameter
+  # - name: redisPort
+  #   secretKeyRef:
+  #     name: redis-credentials
+  #     key: redis-port
+
+  # Redis password - injected from Kubernetes Secret
+  - name: redisPassword
+    secretKeyRef:
+      name: redis-credentials
+      key: redis-password
+
+  # ========== TLS Configuration ==========
+  # Enable TLS (required for DO Managed Redis)
+  - name: enableTLS
+    value: "true"
+
+  # Optional: TLS CA certificate (uncomment if custom validation needed)
+  # DO Managed Redis uses publicly trusted certificates
+  # - name: caCert
+  #   secretKeyRef:
+  #     name: redis-credentials
+  #     key: ca-cert
+
+  # ========== Database Configuration ==========
+  # Redis database number (0-15, default: 0)
+  - name: redisDB
+    value: "0"
+
+  # Redis username (DO Managed Redis default: "default")
+  # Uncomment if using custom ACL users
+  # - name: redisUsername
+  #   secretKeyRef:
+  #     name: redis-credentials
+  #     key: redis-username
+
+  # ========== Timeout Configuration ==========
+  # Connection timeout
+  - name: dialTimeout
+    value: "5s"
+
+  # Read timeout
+  - name: readTimeout
+    value: "3s"
+
+  # Write timeout
+  - name: writeTimeout
+    value: "3s"
+
+  # ========== Retry Configuration ==========
+  # Maximum number of retries for failed operations
+  - name: maxRetries
+    value: "3"
+
+  # Minimum retry backoff
+  - name: minRetryBackoff
+    value: "8ms"
+
+  # Maximum retry backoff
+  - name: maxRetryBackoff
+    value: "512ms"
+
+  # ========== Connection Pooling ==========
+  # Maximum connection pool size
+  - name: poolSize
+    value: "20"
+
+  # Minimum idle connections in pool
+  - name: minIdleConns
+    value: "5"
+
+  # Connection age before closing (0 = no age limit)
+  - name: maxConnAge
+    value: "0"
+
+  # Pool timeout (time to wait for connection from pool)
+  - name: poolTimeout
+    value: "4s"
+
+  # Idle timeout (time before idle connection is closed)
+  - name: idleTimeout
+    value: "5m"
+
+  # Idle check frequency (how often to check for idle connections)
+  - name: idleCheckFrequency
+    value: "1m"
+
+  # ========== Key Management ==========
+  # Key prefix for state entries (useful for multi-tenancy or namespacing)
+  - name: keyPrefix
+    value: "todo-app"
+
+  # TTL in seconds for state entries (0 = no expiry)
+  # Set to 3600 (1 hour) for conversation state caching
+  # Adjust based on use case:
+  # - Conversation history: 3600 (1 hour)
+  # - Reminder deduplication flags: 600 (10 minutes)
+  # - Temporary workflow state: 1800 (30 minutes)
+  - name: ttlInSeconds
+    value: "3600"
+
+  # ========== Performance Configuration ==========
+  # Enable pipelining for batch operations (improves throughput)
+  - name: enablePipelining
+    value: "true"
+
+  # Pipeline window size (max number of commands to batch)
+  - name: pipelineWindow
+    value: "100"
+
+# ========== Scopes ==========
+# Define which services can use this component
+scopes:
+- backend-service
+- notification-service
+- recurring-task-service
+
+---
+# Notes for Operations:
+#
+# 1. Credential Rotation:
+#    - Update "redis-credentials" Kubernetes Secret
+#    - Restart pods: kubectl rollout restart deployment/<service-name>
+#    - Verify connectivity in Dapr sidecar logs
+#
+# 2. Monitoring:
+#    - Check DO Redis console for connection count and memory usage
+#    - Monitor Dapr metrics: kubectl port-forward svc/dapr-dashboard -n dapr-system 8080:8080
+#    - Check Redis stats: redis-cli -h <host> -p 25061 -a <password> --tls INFO stats
+#
+# 3. Troubleshooting:
+#    - Verify Secret exists: kubectl get secret redis-credentials -o yaml
+#    - Check Dapr logs: kubectl logs <pod-name> -c daprd
+#    - Test connectivity:
+#        kubectl run redis-test --image=redis:alpine --rm -it -- \
+#          redis-cli -h <host> -p 25061 -a <password> --tls PING
+#
+# 4. State Keys (examples):
+#    - todo-app::conversation::<uuid>: Full AI chat conversation history
+#    - todo-app::reminder-sent::<task-id>: Reminder deduplication flag
+#    - todo-app::recurring-processed::<template-id>: Last processed timestamp
+#
+# 5. Cache Eviction:
+#    - TTL-based expiration: 1 hour for most state (configurable per-key in application)
+#    - LRU eviction: DO Managed Redis uses LRU when memory limit reached
+#    - Manual eviction: Use Dapr state delete API for explicit cleanup
+#
+# 6. Security:
+#    - All traffic encrypted with TLS
+#    - Password authentication enforced
+#    - Credentials stored encrypted in Kubernetes Secrets
+#    - Redis configured for REQUIREPASS (DO default)
+#
+# 7. Scaling Considerations:
+#    - DO Managed Redis: Scale vertically (upgrade plan for more RAM/connections)
+#    - Current plan: Basic (1GB RAM, 25 connections) sufficient for Phase 5
+#    - Monitor connection count: should stay below 20 (poolSize = 20)

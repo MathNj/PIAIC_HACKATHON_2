@@ -1,0 +1,102 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kafka-pubsub
+  namespace: default
+  labels:
+    app: todo-app
+    component: messaging
+    environment: production
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+  # ========================================
+  # Connection - Redpanda Cloud (injected from Secret)
+  # ========================================
+  - name: brokers
+    secretKeyRef:
+      name: redpanda-credentials
+      key: brokers
+
+  - name: consumerGroup
+    value: "todo-app-production-group"
+
+  - name: clientID
+    value: "todo-app-production-client"
+
+  # ========================================
+  # Authentication - SASL/SCRAM-SHA-256
+  # ========================================
+  - name: authType
+    value: "password"
+
+  - name: saslMechanism
+    value: "SHA-256"
+
+  - name: saslUsername
+    secretKeyRef:
+      name: redpanda-credentials
+      key: sasl-username
+
+  - name: saslPassword
+    secretKeyRef:
+      name: redpanda-credentials
+      key: sasl-password
+
+  # ========================================
+  # TLS/SSL Configuration (Required for Redpanda Cloud)
+  # ========================================
+  - name: enableTLS
+    value: "true"
+
+  # Skip TLS verification only if necessary (not recommended for production)
+  # - name: skipVerify
+  #   value: "false"
+
+  # ========================================
+  # Producer Configuration
+  # ========================================
+  - name: maxMessageBytes
+    value: "10485760"  # 10 MB
+
+  - name: enableIdempotence
+    value: "true"  # Exactly-once semantics
+
+  - name: compressionType
+    value: "gzip"  # Network efficiency
+
+  - name: producerMaxWaitTime
+    value: "10s"
+
+  - name: producerRetries
+    value: "3"
+
+  # ========================================
+  # Consumer Configuration
+  # ========================================
+  - name: consumeRetryEnabled
+    value: "true"
+
+  - name: consumeRetryInterval
+    value: "3s"
+
+  - name: consumeRetryDuration
+    value: "30s"
+
+  - name: autoOffsetReset
+    value: "earliest"  # Start from beginning if no offset stored
+
+  # ========================================
+  # Performance Tuning
+  # ========================================
+  - name: version
+    value: "3.0.0"  # Kafka protocol version (Redpanda 3.x compatible)
+
+# ========================================
+# Scopes - Which apps can use this component
+# ========================================
+scopes:
+- backend-service
+- notification-service
+- recurring-task-service

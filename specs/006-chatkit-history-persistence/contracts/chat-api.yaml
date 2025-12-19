@@ -1,0 +1,578 @@
+openapi: 3.1.0
+info:
+  title: Chat API
+  version: 1.0.0
+  description: |
+    Phase III OpenAI Chatkit Integration API
+
+    This API provides conversation and message management for AI-powered chat functionality.
+    All endpoints require JWT authentication and enforce strict tenant isolation.
+
+    **Constitutional Requirements:**
+    - Stateless agent architecture (no in-memory state)
+    - Database-backed history persistence
+    - User_id validation on all operations
+    - Zero cross-tenant data leakage
+
+servers:
+  - url: http://localhost:8000
+    description: Local development
+  - url: https://your-backend.vercel.app
+    description: Production (Vercel)
+
+security:
+  - BearerAuth: []
+
+tags:
+  - name: conversations
+    description: Conversation management operations
+  - name: messages
+    description: Message operations within conversations
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token from authentication endpoint
+
+  schemas:
+    Conversation:
+      type: object
+      required:
+        - id
+        - user_id
+        - title
+        - created_at
+        - updated_at
+        - message_count
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique conversation identifier
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        user_id:
+          type: string
+          format: uuid
+          description: Owner user ID (tenant isolation)
+          example: "7c9e6679-7425-40de-944b-e07fc1f90ae7"
+        title:
+          type: string
+          maxLength: 200
+          description: Conversation title (auto-generated or user-set)
+          example: "How to organize my tasks?"
+        created_at:
+          type: string
+          format: date-time
+          description: Conversation creation timestamp
+          example: "2025-12-19T10:00:00.000Z"
+        updated_at:
+          type: string
+          format: date-time
+          description: Last message timestamp
+          example: "2025-12-19T10:30:00.000Z"
+        message_count:
+          type: integer
+          minimum: 0
+          description: Total messages in conversation
+          example: 15
+        last_message_preview:
+          type: string
+          nullable: true
+          maxLength: 100
+          description: Preview of last message (first 100 chars)
+          example: "Here are your tasks for today: 1. Buy groceries 2. Submit report..."
+
+    ConversationCreate:
+      type: object
+      properties:
+        title:
+          type: string
+          maxLength: 200
+          nullable: true
+          description: Optional title (auto-generated from first message if omitted)
+          example: "Weekly Planning"
+
+    ConversationUpdate:
+      type: object
+      required:
+        - title
+      properties:
+        title:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: New conversation title
+          example: "Updated Title"
+
+    ConversationList:
+      type: object
+      required:
+        - conversations
+        - hasMore
+      properties:
+        conversations:
+          type: array
+          items:
+            $ref: '#/components/schemas/Conversation'
+        nextCursor:
+          type: string
+          format: date-time
+          nullable: true
+          description: Cursor for next page (ISO timestamp)
+          example: "2025-12-18T09:30:00.000Z"
+        hasMore:
+          type: boolean
+          description: Whether more conversations are available
+          example: true
+
+    Message:
+      type: object
+      required:
+        - id
+        - conversation_id
+        - role
+        - content
+        - created_at
+      properties:
+        id:
+          type: string
+          format: uuid
+          description: Unique message identifier
+          example: "660e9511-f39c-52e5-b827-557766551111"
+        conversation_id:
+          type: string
+          format: uuid
+          description: Parent conversation ID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        role:
+          type: string
+          enum: [user, assistant]
+          description: Message author role
+          example: "user"
+        content:
+          type: string
+          minLength: 1
+          maxLength: 10000
+          description: Message text content (markdown supported)
+          example: "What tasks do I have today?"
+        tool_calls:
+          type: object
+          nullable: true
+          description: MCP tool invocations (assistant messages only)
+          properties:
+            tool_calls:
+              type: array
+              items:
+                type: object
+                properties:
+                  tool_name:
+                    type: string
+                    example: "list_tasks"
+                  arguments:
+                    type: object
+                    example: {"status": "pending"}
+                  result:
+                    type: object
+                    example: {"tasks": [...]}
+                  timestamp:
+                    type: string
+                    format: date-time
+                    example: "2025-12-19T10:30:00.000Z"
+                  duration_ms:
+                    type: integer
+                    example: 245
+                  status:
+                    type: string
+                    enum: [success, error]
+                    example: "success"
+        created_at:
+          type: string
+          format: date-time
+          description: Message creation timestamp
+          example: "2025-12-19T10:01:00.000Z"
+
+    MessageCreate:
+      type: object
+      required:
+        - content
+      properties:
+        content:
+          type: string
+          minLength: 1
+          maxLength: 10000
+          description: Message text content
+          example: "Create a task to buy groceries tomorrow"
+
+    MessageList:
+      type: object
+      required:
+        - messages
+        - conversation_id
+        - total_count
+      properties:
+        messages:
+          type: array
+          items:
+            $ref: '#/components/schemas/Message'
+        conversation_id:
+          type: string
+          format: uuid
+          description: Parent conversation ID
+          example: "550e8400-e29b-41d4-a716-446655440000"
+        total_count:
+          type: integer
+          minimum: 0
+          description: Total messages in conversation
+          example: 42
+
+    Error:
+      type: object
+      required:
+        - detail
+      properties:
+        detail:
+          type: string
+          description: Error message
+          example: "Conversation not found"
+
+paths:
+  /api/chat/conversations:
+    get:
+      tags:
+        - conversations
+      summary: List conversations for authenticated user
+      description: |
+        Returns paginated list of conversations owned by the authenticated user,
+        ordered by most recently updated first.
+
+        **Security**: Only returns conversations where user_id matches JWT token.
+      parameters:
+        - name: limit
+          in: query
+          description: Maximum conversations to return
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+        - name: cursor
+          in: query
+          description: Pagination cursor (ISO timestamp from previous response)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationList'
+        '401':
+          description: Unauthorized (invalid or missing JWT token)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - conversations
+      summary: Create new conversation
+      description: |
+        Creates a new conversation for the authenticated user.
+
+        **Security**: user_id set from JWT token, not request body.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationCreate'
+      responses:
+        '201':
+          description: Conversation created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '400':
+          description: Bad request (validation error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/chat/conversations/{conversation_id}:
+    get:
+      tags:
+        - conversations
+      summary: Get conversation by ID
+      description: |
+        Returns conversation details.
+
+        **Security**: Returns 403 if conversation belongs to different user.
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          description: Conversation UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden (conversation belongs to different user)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Conversation not found or deleted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    put:
+      tags:
+        - conversations
+      summary: Update conversation title
+      description: |
+        Updates the title of an existing conversation.
+
+        **Security**: Returns 403 if conversation belongs to different user.
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          description: Conversation UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ConversationUpdate'
+      responses:
+        '200':
+          description: Conversation updated
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Conversation'
+        '400':
+          description: Bad request (validation error)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    delete:
+      tags:
+        - conversations
+      summary: Delete conversation (soft delete)
+      description: |
+        Soft deletes a conversation (sets deleted_at timestamp).
+
+        **Security**: Returns 403 if conversation belongs to different user.
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          description: Conversation UUID
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '204':
+          description: Conversation deleted
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /api/chat/conversations/{conversation_id}/messages:
+    get:
+      tags:
+        - messages
+      summary: Get conversation message history
+      description: |
+        Returns all messages in a conversation, ordered chronologically.
+
+        **Security**: Returns 403 if conversation belongs to different user.
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          description: Conversation UUID
+          schema:
+            type: string
+            format: uuid
+        - name: limit
+          in: query
+          description: Maximum messages to return (for pagination)
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 50
+        - name: since
+          in: query
+          description: Only return messages created after this timestamp (for polling)
+          schema:
+            type: string
+            format: date-time
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MessageList'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+    post:
+      tags:
+        - messages
+      summary: Send message to conversation
+      description: |
+        Sends a user message and triggers AI agent response.
+
+        **Workflow**:
+        1. Save user message to database
+        2. Fetch conversation history from database (stateless agent requirement)
+        3. Run agent with history context and user message
+        4. Agent executes MCP tools if needed
+        5. Save assistant response with tool_calls metadata
+        6. Return both user message and assistant response
+
+        **Security**: Returns 403 if conversation belongs to different user.
+      parameters:
+        - name: conversation_id
+          in: path
+          required: true
+          description: Conversation UUID
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MessageCreate'
+      responses:
+        '201':
+          description: Message sent and agent responded
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  user_message:
+                    $ref: '#/components/schemas/Message'
+                  assistant_message:
+                    $ref: '#/components/schemas/Message'
+        '400':
+          description: Bad request (validation error, content too long)
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '401':
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '404':
+          description: Conversation not found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+        '500':
+          description: Agent execution error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'

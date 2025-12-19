@@ -1,0 +1,18 @@
+apiVersion: v2
+name: todo-chart
+description: Todo Chatbot with AI Agent (Phase III) - Kubernetes Deployment
+type: application
+version: 0.1.0
+appVersion: "4.0.0"
+keywords:
+  - todo
+  - kubernetes
+  - helm
+  - ai
+  - chatbot
+  - minikube
+  - fastapi
+  - nextjs
+maintainers:
+  - name: Todo App Team
+    email: team@example.com

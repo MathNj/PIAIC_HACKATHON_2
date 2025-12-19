@@ -11,10 +11,5 @@
       "src": "/(.*)",
       "dest": "vercel_app.py"
     }
-  ],
-  "env": {
-    "DATABASE_URL": "",
-    "BETTER_AUTH_SECRET": "",
-    "FRONTEND_URL": ""
-  }
+  ]
 }

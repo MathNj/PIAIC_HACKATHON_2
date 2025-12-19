@@ -1,0 +1,59 @@
+# =========================================
+# Terraform Variables Example
+# =========================================
+# Copy this file to terraform.tfvars and fill in your values
+# DO NOT commit terraform.tfvars to version control!
+#
+# Usage:
+#   cp terraform.tfvars.example terraform.tfvars
+#   # Edit terraform.tfvars with your values
+#   terraform init
+#   terraform plan
+#   terraform apply
+# =========================================
+
+# DigitalOcean API Token (required)
+# Get your token from: https://cloud.digitalocean.com/account/api/tokens
+do_token = "dop_v1_YOUR_DIGITALOCEAN_API_TOKEN_HERE"
+
+# Project Configuration
+project_name = "todo-app"
+environment  = "production"  # dev, staging, or production
+
+# Region Configuration
+# Available regions: nyc1, nyc3, sfo3, ams3, sgp1, lon1, fra1, tor1, blr1
+region = "nyc3"
+
+# Kubernetes Configuration
+k8s_version = "1.31.1-do.4"  # Check available versions: doctl kubernetes options versions
+node_size   = "s-2vcpu-4gb"  # s-1vcpu-2gb, s-2vcpu-4gb, s-4vcpu-8gb, etc.
+node_count  = 2              # Initial number of nodes (auto-scales 2-5)
+
+# Database Configuration
+db_size    = "db-s-1vcpu-1gb"  # db-s-1vcpu-1gb, db-s-2vcpu-4gb, etc.
+redis_size = "db-s-1vcpu-1gb"
+
+# =========================================
+# Cost Estimate (NYC3 region, as of Dec 2024)
+# =========================================
+# - Kubernetes: 2 x s-2vcpu-4gb nodes = $48/month ($24 each)
+# - PostgreSQL: db-s-1vcpu-1gb = $15/month
+# - Redis: db-s-1vcpu-1gb = $15/month
+# - Container Registry: Basic tier = $5/month
+# - Load Balancer: $12/month
+# -----------------------------------------
+# Total Estimated Cost: ~$95/month
+# =========================================
+
+# =========================================
+# Production Recommendations
+# =========================================
+# For production workloads, consider:
+# - node_size: s-4vcpu-8gb or higher
+# - node_count: 3 (for high availability)
+# - db_size: db-s-2vcpu-4gb or higher
+# - Enable database backups and point-in-time recovery
+# - Configure monitoring and alerting
+# - Set up automatic database backups
+# - Use managed load balancer for external traffic
+# =========================================

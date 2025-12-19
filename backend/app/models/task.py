@@ -10,6 +10,7 @@ from typing import Optional
 from uuid import UUID
 from sqlmodel import Field, SQLModel, Index
 from enum import Enum
+from pydantic import ConfigDict
 
 
 class TaskPriority(str, Enum):
@@ -81,19 +82,36 @@ class Task(SQLModel, table=True):
         description="Task completion status"
     )
 
-    # Priority
-    priority: str = Field(
-        default=TaskPriority.NORMAL.value,
-        nullable=False,
+    # Priority (V2: foreign key to priorities table)
+    priority_id: Optional[int] = Field(
+        default=None,
+        foreign_key="priorities.id",
+        nullable=True,
         index=True,
-        description="Task priority (low, normal, high)"
+        description="Foreign key to priorities table (nullable)"
     )
 
     # Due date
     due_date: Optional[datetime] = Field(
         default=None,
         nullable=True,
+        index=True,
         description="Optional due date for the task (UTC)"
+    )
+
+    # Recurring task fields (V2)
+    is_recurring: bool = Field(
+        default=False,
+        nullable=False,
+        index=True,
+        description="Whether task regenerates on completion"
+    )
+
+    recurrence_pattern: Optional[str] = Field(
+        default=None,
+        nullable=True,
+        max_length=20,
+        description="Recurrence frequency: 'daily', 'weekly', 'monthly', 'yearly'"
     )
 
     # Timestamps
@@ -109,9 +127,8 @@ class Task(SQLModel, table=True):
         description="Last update timestamp (UTC)"
     )
 
-    class Config:
-        """Pydantic model configuration."""
-        json_schema_extra = {
+    model_config = ConfigDict(
+        json_schema_extra={
             "example": {
                 "id": 1,
                 "user_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -124,6 +141,7 @@ class Task(SQLModel, table=True):
                 "updated_at": "2025-12-06T12:00:00Z"
             }
         }
+    )
 
 
 # Create composite indexes for efficient filtering

@@ -27,7 +27,36 @@ You own the specification infrastructure:
 - Manage templates in .specify/templates/ for PHRs, ADRs, and other artifacts
 - Maintain scripts in .specify/scripts/ for automation and tooling
 
-### 3. Spec Compliance Verification (Core Reusable Skill)
+### 3. Specialized Skills
+
+You have access to the following specialized skill from the `.claude/skills/` library:
+
+#### spec-architect
+**Use Skill tool**: `Skill({ skill: "spec-architect" })`
+
+This skill generates Spec-Kit Plus compliant feature specifications for the Todo App. Use when designing features or creating specs following the project's spec-driven development workflow.
+
+**When to invoke**:
+- User asks to "design" or "spec out" a new feature
+- User says "Create a feature spec" or "Run spec architect"
+- Starting Phase II or new feature work
+- Before implementation to establish clear requirements
+
+**What it provides**:
+1. Complete feature specification at `/specs/features/[feature-name].md` with:
+   - Overview with problem and value statement
+   - User stories with clear value propositions
+   - Testable acceptance criteria
+   - Data model design (SQLModel-aligned)
+   - RESTful API endpoints with request/response schemas
+   - UI requirements (technology-agnostic)
+   - Dependencies and integration points
+   - Non-functional requirements
+   - Implementation phases
+2. Automatic PHR creation
+3. Suggestion to run `/sp.plan` for implementation planning
+
+### 4. Spec Compliance Verification (Core Process)
 Before any code is considered complete, you verify:
 
 **Step 1: Identify Relevant Specs**

@@ -1,0 +1,114 @@
+# Default values for todo-chart (Local Minikube)
+# This is a YAML-formatted file.
+
+# Global configuration
+global:
+  environment: local
+  labels:
+    app: todo
+    managedBy: helm
+
+# Backend configuration
+backend:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: registry.digitalocean.com/todo-chatbot-reg/backend
+    tag: latest
+    pullPolicy: Always
+
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 8000
+
+  resources:
+    requests:
+      cpu: 200m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  healthProbes:
+    readiness:
+      path: /health
+      port: 8000
+      initialDelaySeconds: 10
+      periodSeconds: 5
+      timeoutSeconds: 3
+      successThreshold: 1
+      failureThreshold: 3
+    liveness:
+      path: /health
+      port: 8000
+      initialDelaySeconds: 30
+      periodSeconds: 10
+      timeoutSeconds: 3
+      successThreshold: 1
+      failureThreshold: 3
+
+  env:
+    LOG_LEVEL: info
+    WORKERS: "1"
+
+# Frontend configuration
+frontend:
+  enabled: true
+  replicaCount: 1
+
+  image:
+    repository: registry.digitalocean.com/todo-chatbot-reg/frontend
+    tag: latest
+    pullPolicy: Always
+
+  service:
+    type: LoadBalancer
+    port: 80
+    targetPort: 3000
+
+  resources:
+    requests:
+      cpu: 100m
+      memory: 128Mi
+    limits:
+      cpu: 250m
+      memory: 256Mi
+
+  healthProbes:
+    readiness:
+      path: /
+      port: 3000
+      initialDelaySeconds: 5
+      periodSeconds: 5
+      timeoutSeconds: 3
+      successThreshold: 1
+      failureThreshold: 3
+    liveness:
+      path: /
+      port: 3000
+      initialDelaySeconds: 15
+      periodSeconds: 10
+      timeoutSeconds: 3
+      successThreshold: 1
+      failureThreshold: 3
+
+# Image pull secrets for DigitalOcean Container Registry
+imagePullSecrets:
+  - name: registry-todo-chatbot-reg
+
+# Secrets configuration
+secrets:
+  name: todo-secrets
+  create: false  # Manually created via kubectl for local development
+  keys:
+    - DATABASE_URL
+    - OPENAI_API_KEY
+    - BETTER_AUTH_SECRET
+
+# ConfigMap configuration
+configMap:
+  name: todo-config
+  data:
+    APP_NAME: "Todo Chatbot"

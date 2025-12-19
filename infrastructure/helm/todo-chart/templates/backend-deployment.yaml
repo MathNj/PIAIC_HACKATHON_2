@@ -1,0 +1,83 @@
+{{- if .Values.backend.enabled }}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: backend
+  labels:
+    {{- include "todo-chart.backendLabels" . | nindent 4 }}
+  annotations:
+    {{- include "todo-chart.aiOpsAnnotations" . | nindent 4 }}
+spec:
+  replicas: {{ .Values.backend.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "todo-chart.selectorLabels" . | nindent 6 }}
+      tier: backend
+  strategy:
+    type: RollingUpdate
+    rollingUpdate:
+      maxUnavailable: 0
+      maxSurge: 1
+  template:
+    metadata:
+      labels:
+        {{- include "todo-chart.backendLabels" . | nindent 8 }}
+      annotations:
+        {{- include "todo-chart.aiOpsAnnotations" . | nindent 8 }}
+        # Dapr Sidecar Annotations - Phase 5 Event-Driven Architecture
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "backend-service"
+        dapr.io/app-port: "{{ .Values.backend.service.targetPort }}"
+        dapr.io/enable-api-logging: "true"
+        dapr.io/env: "DAPR_UNSAFE_SKIP_CONTAINER_UID_GID_CHECK=true"
+    spec:
+      imagePullSecrets:
+        {{- toYaml .Values.imagePullSecrets | nindent 8 }}
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+      containers:
+      - name: backend
+        image: "{{ .Values.backend.image.repository }}:{{ .Values.backend.image.tag }}"
+        imagePullPolicy: {{ .Values.backend.image.pullPolicy }}
+        ports:
+        - name: http
+          containerPort: {{ .Values.backend.service.targetPort }}
+          protocol: TCP
+        envFrom:
+        - secretRef:
+            name: {{ .Values.secrets.name }}
+        env:
+        - name: LOG_LEVEL
+          value: {{ .Values.backend.env.LOG_LEVEL | quote }}
+        - name: WORKERS
+          value: {{ .Values.backend.env.WORKERS | quote }}
+        - name: PORT
+          value: {{ .Values.backend.service.targetPort | quote }}
+        resources:
+          {{- toYaml .Values.backend.resources | nindent 10 }}
+        readinessProbe:
+          httpGet:
+            path: {{ .Values.backend.healthProbes.readiness.path }}
+            port: {{ .Values.backend.healthProbes.readiness.port }}
+          initialDelaySeconds: {{ .Values.backend.healthProbes.readiness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.backend.healthProbes.readiness.periodSeconds }}
+          timeoutSeconds: {{ .Values.backend.healthProbes.readiness.timeoutSeconds }}
+          successThreshold: {{ .Values.backend.healthProbes.readiness.successThreshold }}
+          failureThreshold: {{ .Values.backend.healthProbes.readiness.failureThreshold }}
+        livenessProbe:
+          httpGet:
+            path: {{ .Values.backend.healthProbes.liveness.path }}
+            port: {{ .Values.backend.healthProbes.liveness.port }}
+          initialDelaySeconds: {{ .Values.backend.healthProbes.liveness.initialDelaySeconds }}
+          periodSeconds: {{ .Values.backend.healthProbes.liveness.periodSeconds }}
+          timeoutSeconds: {{ .Values.backend.healthProbes.liveness.timeoutSeconds }}
+          successThreshold: {{ .Values.backend.healthProbes.liveness.successThreshold }}
+          failureThreshold: {{ .Values.backend.healthProbes.liveness.failureThreshold }}
+        securityContext:
+          allowPrivilegeEscalation: false
+          readOnlyRootFilesystem: false
+          runAsNonRoot: true
+          runAsUser: 1000
+{{- end }}

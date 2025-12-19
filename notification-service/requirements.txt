@@ -1,0 +1,12 @@
+# Notification Service Dependencies
+
+# Web Framework
+fastapi==0.115.6
+uvicorn[standard]==0.34.0
+
+# HTTP Client (for future integrations)
+httpx==0.28.1
+
+# Data Validation
+pydantic==2.10.4
+pydantic-settings==2.7.0

@@ -7,13 +7,15 @@ Endpoints for task CRUD operations with multi-user isolation.
 from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlmodel import Session, select
 from uuid import UUID
-from typing import Annotated, Literal
+from typing import Annotated, Literal, Optional
+from datetime import datetime
 
 from app.database import get_session
 from app.models.task import Task
+from app.models.task_tag import TaskTag
 from app.schemas.task import TaskRead, TaskCreate, TaskUpdate
 from app.auth.dependencies import get_current_user
-from datetime import datetime
+from app.dapr.client import dapr_client
 
 router = APIRouter(prefix="/api", tags=["Tasks"])
 
@@ -28,41 +30,74 @@ async def get_tasks(
         alias="status",
         description="Filter tasks by completion status"
     ),
-    sort: Literal["created", "updated", "title"] = Query(
+    priority_ids: Optional[list[int]] = Query(
+        None,
+        alias="priority",
+        description="Filter by priority IDs (1=High, 2=Medium, 3=Low)"
+    ),
+    tag_ids: Optional[list[int]] = Query(
+        None,
+        alias="tags",
+        description="Filter by tag IDs"
+    ),
+    due_date_from: Optional[datetime] = Query(
+        None,
+        description="Filter tasks with due date >= this date"
+    ),
+    due_date_to: Optional[datetime] = Query(
+        None,
+        description="Filter tasks with due date <= this date"
+    ),
+    is_recurring: Optional[bool] = Query(
+        None,
+        description="Filter by recurring status"
+    ),
+    sort: Literal["created", "updated", "title", "due_date", "priority"] = Query(
         "created",
-        description="Sort tasks by field (created=ASC, updated=DESC, title=alphabetical)"
+        description="Sort tasks by field"
+    ),
+    sort_order: Literal["asc", "desc"] = Query(
+        "asc",
+        description="Sort order (asc or desc)"
     )
 ) -> list[TaskRead]:
     """
-    Get all tasks for a user with filtering and sorting.
+    Get all tasks for a user with advanced filtering and sorting.
 
     **Authorization**: User can only access their own tasks.
     Path user_id must match authenticated user from JWT.
 
     **Filtering**:
-    - status=all: Return all tasks (default)
-    - status=pending: Return only incomplete tasks (completed=False)
-    - status=completed: Return only completed tasks (completed=True)
+    - status=all|pending|completed: Filter by completion status
+    - priority=[1,2,3]: Filter by priority IDs (1=High, 2=Medium, 3=Low)
+    - tags=[1,2,3]: Filter by tag IDs (tasks with ANY of these tags)
+    - due_date_from/due_date_to: Filter by due date range
+    - is_recurring=true|false: Filter recurring tasks
 
     **Sorting**:
-    - sort=created: Sort by creation date (oldest first)
-    - sort=updated: Sort by update date (newest first)
-    - sort=title: Sort alphabetically by title (A-Z)
+    - sort=created|updated|title|due_date|priority
+    - sort_order=asc|desc
 
     **Example**:
     ```
-    GET /api/{user_id}/tasks?status=pending&sort=created
+    GET /api/{user_id}/tasks?status=pending&priority=1&priority=2&sort=due_date&sort_order=asc
     ```
 
     Args:
-        user_id: UUID from URL path (user whose tasks to retrieve)
-        current_user: UUID from JWT token (authenticated user)
+        user_id: UUID from URL path
+        current_user: UUID from JWT token
         session: Database session
         status_filter: Filter by completion status
-        sort: Sort field and direction
+        priority_ids: Filter by priority IDs
+        tag_ids: Filter by tag IDs
+        due_date_from: Filter tasks with due date >= this
+        due_date_to: Filter tasks with due date <= this
+        is_recurring: Filter by recurring status
+        sort: Sort field
+        sort_order: Sort direction (asc/desc)
 
     Returns:
-        List of tasks matching filters, sorted as specified
+        List of tasks matching filters
 
     Raises:
         HTTPException 403: If path user_id doesn't match authenticated user
@@ -83,37 +118,66 @@ async def get_tasks(
         statement = statement.where(Task.completed == False)
     elif status_filter == "completed":
         statement = statement.where(Task.completed == True)
-    # status_filter == "all": no additional filter needed
+
+    # Apply priority filtering
+    if priority_ids:
+        statement = statement.where(Task.priority_id.in_(priority_ids))
+
+    # Apply tag filtering (tasks with ANY of the specified tags)
+    if tag_ids:
+        # Join with task_tags to filter by tags
+        statement = statement.join(TaskTag).where(TaskTag.tag_id.in_(tag_ids)).distinct()
+
+    # Apply due date range filtering
+    if due_date_from:
+        statement = statement.where(Task.due_date >= due_date_from)
+    if due_date_to:
+        statement = statement.where(Task.due_date <= due_date_to)
+
+    # Apply recurring filter
+    if is_recurring is not None:
+        statement = statement.where(Task.is_recurring == is_recurring)
 
     # Apply sorting
-    if sort == "created":
-        # Sort by creation date (oldest first)
-        statement = statement.order_by(Task.created_at.asc())
-    elif sort == "updated":
-        # Sort by update date (newest first)
-        statement = statement.order_by(Task.updated_at.desc())
-    elif sort == "title":
-        # Sort alphabetically by title (A-Z)
-        statement = statement.order_by(Task.title.asc())
+    sort_column = {
+        "created": Task.created_at,
+        "updated": Task.updated_at,
+        "title": Task.title,
+        "due_date": Task.due_date,
+        "priority": Task.priority_id
+    }[sort]
+
+    if sort_order == "desc":
+        statement = statement.order_by(sort_column.desc())
+    else:
+        statement = statement.order_by(sort_column.asc())
 
     # Execute query
     try:
         tasks = session.exec(statement).all()
-        # Convert to response schemas with string user_id
-        return [
-            TaskRead(
+
+        # For each task, fetch its tag IDs
+        result_tasks = []
+        for task in tasks:
+            tag_statement = select(TaskTag.tag_id).where(TaskTag.task_id == task.id)
+            task_tag_ids = session.exec(tag_statement).all()
+
+            result_tasks.append(TaskRead(
                 id=task.id,
                 user_id=str(task.user_id),
                 title=task.title,
                 description=task.description,
                 completed=task.completed,
-                priority=task.priority,
+                priority_id=task.priority_id,
                 due_date=task.due_date,
+                is_recurring=task.is_recurring,
+                recurrence_pattern=task.recurrence_pattern,
+                tag_ids=list(task_tag_ids),
                 created_at=task.created_at,
                 updated_at=task.updated_at
-            )
-            for task in tasks
-        ]
+            ))
+
+        return result_tasks
     except Exception as e:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -175,13 +239,14 @@ async def create_task(
         )
 
     # Create Task object with user_id from JWT (not from request body)
-    # completed, created_at, updated_at will be set by SQLModel defaults
     new_task = Task(
         user_id=current_user,  # Use JWT user_id, not path parameter
         title=task_data.title,
         description=task_data.description,
-        priority=task_data.priority or "normal",
+        priority_id=task_data.priority_id,
         due_date=task_data.due_date,
+        is_recurring=task_data.is_recurring,
+        recurrence_pattern=task_data.recurrence_pattern,
         # completed defaults to False
         # created_at and updated_at default to datetime.utcnow()
     )
@@ -192,6 +257,40 @@ async def create_task(
         session.commit()
         session.refresh(new_task)  # Populate auto-generated fields (id, timestamps)
 
+        # Create tag associations
+        for tag_id in task_data.tag_ids:
+            task_tag = TaskTag(task_id=new_task.id, tag_id=tag_id)
+            session.add(task_tag)
+
+        session.commit()
+
+        # Publish task_created event to Dapr pub/sub
+        try:
+            event_data = {
+                "event_type": "task_created",
+                "task_id": new_task.id,
+                "user_id": str(new_task.user_id),
+                "title": new_task.title,
+                "description": new_task.description,
+                "completed": new_task.completed,
+                "priority_id": new_task.priority_id,
+                "due_date": new_task.due_date.isoformat() if new_task.due_date else None,
+                "is_recurring": new_task.is_recurring,
+                "recurrence_pattern": new_task.recurrence_pattern,
+                "tag_ids": task_data.tag_ids,
+                "created_at": new_task.created_at.isoformat(),
+                "updated_at": new_task.updated_at.isoformat()
+            }
+
+            dapr_client.publish_event(
+                pubsub_name="kafka-pubsub",
+                topic_name="task-events",
+                data=event_data
+            )
+        except Exception as pub_error:
+            # Log the error but don't fail the request - event publishing is non-critical
+            print(f"Warning: Failed to publish task_created event: {str(pub_error)}")
+
         # Convert to response schema with string user_id
         return TaskRead(
             id=new_task.id,
@@ -199,8 +298,11 @@ async def create_task(
             title=new_task.title,
             description=new_task.description,
             completed=new_task.completed,
-            priority=new_task.priority,
+            priority_id=new_task.priority_id,
             due_date=new_task.due_date,
+            is_recurring=new_task.is_recurring,
+            recurrence_pattern=new_task.recurrence_pattern,
+            tag_ids=task_data.tag_ids,
             created_at=new_task.created_at,
             updated_at=new_task.updated_at
         )
@@ -263,6 +365,10 @@ async def get_task_by_id(
             detail=f"Task {task_id} not found"
         )
 
+    # Fetch tag IDs for this task
+    tag_statement = select(TaskTag.tag_id).where(TaskTag.task_id == task.id)
+    task_tag_ids = session.exec(tag_statement).all()
+
     # Convert to response schema with string user_id
     return TaskRead(
         id=task.id,
@@ -270,8 +376,11 @@ async def get_task_by_id(
         title=task.title,
         description=task.description,
         completed=task.completed,
-        priority=task.priority,
+        priority_id=task.priority_id,
         due_date=task.due_date,
+        is_recurring=task.is_recurring,
+        recurrence_pattern=task.recurrence_pattern,
+        tag_ids=list(task_tag_ids),
         created_at=task.created_at,
         updated_at=task.updated_at
     )
@@ -345,7 +454,10 @@ async def update_task(
         )
 
     # Update only provided fields (partial update)
-    update_data = task_update.dict(exclude_unset=True)  # Pydantic v1 syntax
+    update_data = task_update.model_dump(exclude_unset=True)  # Pydantic v2 syntax
+
+    # Handle tag_ids separately
+    new_tag_ids = update_data.pop("tag_ids", None)
 
     for field, value in update_data.items():
         setattr(task, field, value)
@@ -359,6 +471,52 @@ async def update_task(
         session.commit()
         session.refresh(task)
 
+        # Update tag associations if provided
+        if new_tag_ids is not None:
+            # Remove existing tag associations
+            delete_statement = select(TaskTag).where(TaskTag.task_id == task.id)
+            existing_task_tags = session.exec(delete_statement).all()
+            for task_tag in existing_task_tags:
+                session.delete(task_tag)
+
+            # Add new tag associations
+            for tag_id in new_tag_ids:
+                task_tag = TaskTag(task_id=task.id, tag_id=tag_id)
+                session.add(task_tag)
+
+            session.commit()
+
+        # Fetch current tag IDs
+        tag_statement = select(TaskTag.tag_id).where(TaskTag.task_id == task.id)
+        task_tag_ids = session.exec(tag_statement).all()
+
+        # Publish task_updated event to Dapr pub/sub
+        try:
+            event_data = {
+                "event_type": "task_updated",
+                "task_id": task.id,
+                "user_id": str(task.user_id),
+                "title": task.title,
+                "description": task.description,
+                "completed": task.completed,
+                "priority_id": task.priority_id,
+                "due_date": task.due_date.isoformat() if task.due_date else None,
+                "is_recurring": task.is_recurring,
+                "recurrence_pattern": task.recurrence_pattern,
+                "tag_ids": list(task_tag_ids),
+                "created_at": task.created_at.isoformat(),
+                "updated_at": task.updated_at.isoformat()
+            }
+
+            dapr_client.publish_event(
+                pubsub_name="kafka-pubsub",
+                topic_name="task-events",
+                data=event_data
+            )
+            print(f"Published task_updated event for task {task.id}")
+        except Exception as pub_error:
+            print(f"Warning: Failed to publish task_updated event: {str(pub_error)}")
+
         # Convert to response schema with string user_id
         return TaskRead(
             id=task.id,
@@ -366,8 +524,11 @@ async def update_task(
             title=task.title,
             description=task.description,
             completed=task.completed,
-            priority=task.priority,
+            priority_id=task.priority_id,
             due_date=task.due_date,
+            is_recurring=task.is_recurring,
+            recurrence_pattern=task.recurrence_pattern,
+            tag_ids=list(task_tag_ids),
             created_at=task.created_at,
             updated_at=task.updated_at
         )
@@ -433,10 +594,42 @@ async def delete_task(
             detail=f"Task {task_id} not found"
         )
 
+    # Capture task data before deletion for event publishing
+    task_data_for_event = {
+        "task_id": task.id,
+        "user_id": str(task.user_id),
+        "title": task.title,
+        "description": task.description,
+        "completed": task.completed,
+        "priority_id": task.priority_id,
+        "due_date": task.due_date.isoformat() if task.due_date else None,
+        "is_recurring": task.is_recurring,
+        "recurrence_pattern": task.recurrence_pattern,
+        "created_at": task.created_at.isoformat(),
+        "updated_at": task.updated_at.isoformat()
+    }
+
     # Delete from database (hard delete)
     try:
         session.delete(task)
         session.commit()
+
+        # Publish task_deleted event to Dapr pub/sub
+        try:
+            event_data = {
+                "event_type": "task_deleted",
+                **task_data_for_event
+            }
+
+            dapr_client.publish_event(
+                pubsub_name="kafka-pubsub",
+                topic_name="task-events",
+                data=event_data
+            )
+            print(f"Published task_deleted event for task {task_id}")
+        except Exception as pub_error:
+            print(f"Warning: Failed to publish task_deleted event: {str(pub_error)}")
+
         return {"detail": "Task deleted"}
     except Exception as e:
         session.rollback()
@@ -517,6 +710,38 @@ async def toggle_task_completion(
         session.commit()
         session.refresh(task)
 
+        # Fetch tag IDs for this task
+        tag_statement = select(TaskTag.tag_id).where(TaskTag.task_id == task.id)
+        task_tag_ids = session.exec(tag_statement).all()
+
+        # Publish task completion event to Dapr pub/sub
+        try:
+            event_type = "task_completed" if task.completed else "task_uncompleted"
+            event_data = {
+                "event_type": event_type,
+                "task_id": task.id,
+                "user_id": str(task.user_id),
+                "title": task.title,
+                "description": task.description,
+                "completed": task.completed,
+                "priority_id": task.priority_id,
+                "due_date": task.due_date.isoformat() if task.due_date else None,
+                "is_recurring": task.is_recurring,
+                "recurrence_pattern": task.recurrence_pattern,
+                "tag_ids": list(task_tag_ids),
+                "created_at": task.created_at.isoformat(),
+                "updated_at": task.updated_at.isoformat()
+            }
+
+            dapr_client.publish_event(
+                pubsub_name="kafka-pubsub",
+                topic_name="task-events",
+                data=event_data
+            )
+            print(f"Published {event_type} event for task {task.id}")
+        except Exception as pub_error:
+            print(f"Warning: Failed to publish task completion event: {str(pub_error)}")
+
         # Convert to response schema with string user_id
         return TaskRead(
             id=task.id,
@@ -524,8 +749,11 @@ async def toggle_task_completion(
             title=task.title,
             description=task.description,
             completed=task.completed,
-            priority=task.priority,
+            priority_id=task.priority_id,
             due_date=task.due_date,
+            is_recurring=task.is_recurring,
+            recurrence_pattern=task.recurrence_pattern,
+            tag_ids=list(task_tag_ids),
             created_at=task.created_at,
             updated_at=task.updated_at
         )
