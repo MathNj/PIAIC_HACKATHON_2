@@ -1,0 +1,108 @@
+# Kubernetes Deployment Template
+# Production-ready Deployment manifest for containerized applications
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-deployment  # TODO: Replace with your app name
+  labels:
+    app: myapp  # TODO: Replace with your app label
+    env: production
+spec:
+  replicas: 2  # TODO: Adjust replica count
+  selector:
+    matchLabels:
+      app: myapp  # Must match template labels
+  template:
+    metadata:
+      labels:
+        app: myapp
+        version: v1
+    spec:
+      containers:
+      - name: app
+        image: myapp:latest  # TODO: Replace with your image
+        imagePullPolicy: IfNotPresent
+        ports:
+        - containerPort: 8000  # TODO: Adjust port
+          name: http
+          protocol: TCP
+
+        # Environment variables
+        env:
+        - name: ENV
+          value: "production"
+        # - name: DATABASE_URL
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: app-secrets
+        #       key: database-url
+
+        # Resource limits and requests
+        resources:
+          requests:
+            memory: "128Mi"
+            cpu: "100m"
+          limits:
+            memory: "256Mi"
+            cpu: "200m"
+
+        # Liveness probe
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 10
+          periodSeconds: 10
+          timeoutSeconds: 3
+          failureThreshold: 3
+
+        # Readiness probe
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8000
+          initialDelaySeconds: 5
+          periodSeconds: 5
+          timeoutSeconds: 2
+          failureThreshold: 3
+
+      # Security context (run as non-root)
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        fsGroup: 1000
+
+---
+# ConfigMap for application configuration (optional)
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: app-config
+data:
+  app.conf: |
+    # Application configuration
+    LOG_LEVEL=info
+    MAX_CONNECTIONS=100
+
+# ============================================================================
+# Usage Instructions
+# ============================================================================
+# 1. Replace TODOs with your actual values:
+#    - app-deployment → your-app-name
+#    - myapp → your-app-label
+#    - myapp:latest → your-image:tag
+#    - 8000 → your-app-port
+#
+# 2. Apply to cluster:
+#    kubectl apply -f deployment.yaml
+#
+# 3. Verify deployment:
+#    kubectl get deployments
+#    kubectl get pods
+#
+# 4. Check logs:
+#    kubectl logs deployment/app-deployment
+#
+# 5. Scale deployment:
+#    kubectl scale deployment/app-deployment --replicas=3
