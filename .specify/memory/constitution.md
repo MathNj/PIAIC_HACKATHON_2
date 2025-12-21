@@ -1,28 +1,31 @@
 # The Evolution of TODO: Project Constitution
 <!--
 SYNC IMPACT REPORT:
-Version: 2.0.0 → 3.0.0
-Change Type: MAJOR - Phase III AI Agent & MCP principles added, Phase II scoped to completed phase
+Version: 3.0.0 → 3.1.0
+Change Type: MINOR - Phase IV/V infrastructure skills added, transition readiness documented
 Modified Principles:
-  - Principle II: Evolutionary Architecture → Updated with Phase III as current phase
-  - Phase II section → Changed from CURRENT to COMPLETED status
+  - Phase III section → Added Skills Infrastructure Readiness subsection
+  - Phase IV section → Added Infrastructure Skills subsection
+  - Phase V section → Added Infrastructure Skills subsection
 Added Sections:
-  - Phase III: Agent-Augmented System (CURRENT PHASE)
-  - Phase III Architecture Constraints
-  - Phase III MCP Compliance Requirements
-  - Phase III State Management Rules
-  - Phase III Security Constraints
-  - Phase III File Structure Requirements
+  - Phase III Skills Infrastructure Readiness
+  - Phase IV Infrastructure Skills (docker-ai-pilot, kubectl-ai-pilot, kagent-debugger)
+  - Phase V Infrastructure Skills (dapr-scheduler, kafka-infra-provisioner, blueprint-architect)
+  - Phase Transition Readiness Checklist
 Removed Sections: None
+Skills Created:
+  ✅ Phase III: mcp-tool-maker, chatkit-integrator, openai-agents-sdk, agent-orchestrator
+  ✅ Phase IV: docker-ai-pilot, kubectl-ai-pilot, kagent-debugger
+  ✅ Phase V: dapr-scheduler, kafka-infra-provisioner, blueprint-architect
 Templates Status:
-  ✅ plan-template.md - Constitution Check section aligns with Phase III constraints
-  ✅ spec-template.md - Requirements structure compatible with AI Agent features
-  ✅ tasks-template.md - Task categorization supports MCP tool implementation
-  ⚠ mcp-tool-maker skill - Already created and aligned with Phase III requirements
+  ✅ plan-template.md - Constitution Check section aligns with Phase III-V constraints
+  ✅ spec-template.md - Requirements structure compatible with multi-phase architecture
+  ✅ tasks-template.md - Task categorization supports infrastructure provisioning
 Follow-up TODOs:
-  - Create Phase III spec for conversation/message models
-  - Document MCP tool implementation patterns in ADR
-  - Update deployment docs for agent orchestration layer
+  - Complete Phase III MCP tool implementations
+  - Test Phase IV Kubernetes deployment with created skills
+  - Validate Phase V event-driven architecture with Kafka and Dapr skills
+  - Document phase transition ADRs for Phase III → IV → V
 -->
 
 ## Project Vision
@@ -303,6 +306,35 @@ OpenAI ChatKit MUST be integrated into the Next.js frontend for agent interactio
 - Agent behavior documented in ADR
 - MCP integration guide in `docs/mcp-integration.md`
 
+### Skills Infrastructure Readiness
+
+Phase III has established comprehensive skill infrastructure to support AI-augmented development and prepare for future phase transitions.
+
+**Phase III Skills (AI Agent Infrastructure):**
+- ✅ **mcp-tool-maker**: Create MCP tools to expose backend functionality to AI agents
+- ✅ **chatkit-integrator**: Integrate OpenAI ChatKit with database-backed conversation persistence
+- ✅ **openai-agents-sdk**: Build stateless AI agents with tool use and streaming responses
+- ✅ **agent-orchestrator**: Orchestrate agent initialization with database context and JWT auth
+
+**Phase IV Skills (Containerization & Orchestration) - CREATED IN ADVANCE:**
+- ✅ **docker-ai-pilot**: AI-assisted Docker container management and optimization
+- ✅ **kubectl-ai-pilot**: AI-assisted Kubernetes cluster operations and debugging
+- ✅ **kagent-debugger**: Kubernetes agent debugging with pod inspection and log analysis
+
+**Phase V Skills (Event-Driven Architecture) - CREATED IN ADVANCE:**
+- ✅ **dapr-scheduler**: Dapr Jobs API for exact-time task reminder scheduling
+- ✅ **kafka-infra-provisioner**: Kafka cluster provisioning (Strimzi/Redpanda) on Kubernetes
+- ✅ **blueprint-architect**: Extract and productize cloud-native architectural patterns
+
+**Skill Creation Philosophy:**
+Creating infrastructure skills in advance of their deployment phase enables:
+1. **Preparedness**: Skills are ready when phase transition occurs
+2. **Validation**: Skills can be tested and refined before production use
+3. **Learning**: Team familiarizes with upcoming technologies ahead of time
+4. **Confidence**: Reduces risk during actual phase transitions
+
+**Important:** Skills are created proactively but MUST NOT be deployed until their respective phase begins. Phase III implementations MUST NOT use Phase IV/V technologies prematurely.
+
 ## Evolutionary Architecture Roadmap
 
 ### Phase I: Monolithic Script ✅ COMPLETED
@@ -357,6 +389,30 @@ OpenAI ChatKit MUST be integrated into the Next.js frontend for agent interactio
 **Success Criteria**: Services independently deployable, fault-tolerant, scalable
 **Migration Path**: Extract bounded contexts → separate services, deploy to K8s, implement service discovery
 
+**Infrastructure Skills (Pre-Created):**
+- **docker-ai-pilot**: AI-assisted Docker container management
+  - Optimize Dockerfiles with multi-stage builds
+  - Security hardening (non-root users, vulnerability scanning)
+  - BuildKit features (cache mounts, secrets)
+  - Production-ready templates for FastAPI/Next.js
+  - Health checks and metadata labels
+
+- **kubectl-ai-pilot**: AI-assisted Kubernetes operations
+  - Cluster management and resource inspection
+  - Deployment troubleshooting (pod failures, CrashLoopBackOff)
+  - Service connectivity debugging
+  - Log aggregation and analysis
+  - Resource quota and limit management
+
+- **kagent-debugger**: Kubernetes agent debugging
+  - Pod inspection and container status analysis
+  - Log analysis with error pattern detection
+  - Resource usage monitoring
+  - Network connectivity testing
+  - Dapr sidecar troubleshooting
+
+**Skills Deployment Trigger:** Phase IV begins when microservices decomposition starts and Kubernetes deployment is approved.
+
 ### Phase V: Event-Driven Architecture
 **Goal**: Achieve cloud-native architecture with event streaming and eventual consistency
 **Architecture**: Event-driven microservices with Kafka backbone + Dapr runtime
@@ -366,6 +422,39 @@ OpenAI ChatKit MUST be integrated into the Next.js frontend for agent interactio
 **Deployment**: Multi-cloud Kubernetes + Kafka cluster + Dapr sidecars
 **Success Criteria**: Event sourcing, CQRS, real-time collaboration, multi-cloud deployment
 **Migration Path**: Implement event sourcing, add Kafka backbone, refactor to CQRS, deploy Dapr sidecars
+
+**Infrastructure Skills (Pre-Created):**
+- **dapr-scheduler**: Dapr Jobs API for exact-time scheduling
+  - Schedule jobs via POST /v1.0/jobs endpoint
+  - One-time and recurring job support
+  - Callback endpoint handling (/api/jobs/trigger)
+  - Job payload with task_id, user_id, scheduled_at
+  - State persistence via Redis
+  - Retry policies and idempotency
+  - FastAPI integration with job management endpoints
+  - Replaces older Cron bindings with modern Jobs API
+
+- **kafka-infra-provisioner**: Kafka cluster provisioning
+  - Dual provider support (Strimzi/Redpanda)
+  - Automated deployment scripts (deploy_kafka.sh)
+  - Single-node ephemeral for Minikube (1GB RAM)
+  - 3-node persistent for production (2GB RAM per broker)
+  - Required topics: task-events, reminders, task-updates
+  - Comprehensive health checks (pods, services, topics)
+  - Bootstrap server configuration for Dapr pub/sub
+  - Kubernetes manifests and Helm charts
+
+- **blueprint-architect**: Cloud-native pattern extraction
+  - Analyze project structure (FastAPI + Next.js + Dapr + Kafka)
+  - Extract reusable architectural patterns
+  - Package Helm charts and K8s manifests
+  - Generate Spec-Kit templates
+  - Create BLUEPRINT.md with deployment guide
+  - Metadata extraction (blueprint.json)
+  - Productize architecture for reuse
+  - Supports bonus points for cloud-native blueprints
+
+**Skills Deployment Trigger:** Phase V begins when event-driven architecture is approved, Kafka infrastructure is required, and Dapr runtime is deployed.
 
 ## Development Workflow
 
@@ -404,6 +493,62 @@ OpenAI ChatKit MUST be integrated into the Next.js frontend for agent interactio
 3. Error handling verification
 4. Performance check (phase-appropriate benchmarks)
 5. Update documentation (specs, ADRs, README)
+
+## Phase Transition Readiness
+
+### Infrastructure Skills Completion Status
+
+**Phase III (AI Agent Infrastructure):**
+- ✅ mcp-tool-maker skill created and packaged
+- ✅ chatkit-integrator skill created and packaged
+- ✅ openai-agents-sdk skill created and packaged
+- ✅ agent-orchestrator skill created and packaged
+- ⏳ MCP tools implementation pending
+- ⏳ ChatKit UI integration pending
+- ⏳ Conversation/message database models pending
+- ⏳ Agent orchestration layer deployment pending
+
+**Phase IV (Microservices Infrastructure):**
+- ✅ docker-ai-pilot skill created and packaged
+- ✅ kubectl-ai-pilot skill created and packaged
+- ✅ kagent-debugger skill created and packaged
+- ⏳ Microservices decomposition pending
+- ⏳ Kubernetes cluster setup pending
+- ⏳ Helm charts pending
+- ⏳ Service mesh configuration pending
+
+**Phase V (Event-Driven Architecture):**
+- ✅ dapr-scheduler skill created and packaged
+- ✅ kafka-infra-provisioner skill created and packaged
+- ✅ blueprint-architect skill created and packaged
+- ⏳ Kafka cluster deployment pending
+- ⏳ Dapr runtime installation pending
+- ⏳ Event sourcing implementation pending
+- ⏳ CQRS pattern implementation pending
+
+### Transition Readiness Checklist
+
+**Phase III → Phase IV Readiness:**
+- [ ] All Phase III MCP tools implemented and tested
+- [ ] ChatKit UI integrated and functional
+- [ ] Conversation persistence validated
+- [ ] Agent can manage tasks via natural language
+- [ ] Multi-user security verified through agent layer
+- [ ] Performance benchmarks meet requirements
+- [ ] Documentation complete (MCP integration guide, agent ADR)
+- [ ] Phase IV ADR drafted with migration strategy
+
+**Phase IV → Phase V Readiness:**
+- [ ] All microservices extracted and deployed
+- [ ] Services independently scalable
+- [ ] Inter-service communication working
+- [ ] Kubernetes cluster stable
+- [ ] Monitoring and logging operational
+- [ ] Service mesh configured
+- [ ] Documentation complete (service boundaries, API contracts)
+- [ ] Phase V ADR drafted with event sourcing strategy
+
+**Current Status:** Phase III implementation in progress. Skills for Phases IV and V created proactively.
 
 ## Phase Transition Rules
 
@@ -468,4 +613,4 @@ A phase transition can ONLY occur when:
 - ADRs stored in `history/adr/` directory
 - ADR format: Context, Decision, Consequences, Alternatives Considered
 
-**Version**: 3.0.0 | **Ratified**: 2025-12-05 | **Last Amended**: 2025-12-07
+**Version**: 3.1.0 | **Ratified**: 2025-12-05 | **Last Amended**: 2025-12-22
