@@ -332,6 +332,49 @@ This skill provides prompt design and optimization patterns for AI models.
 - A/B testing and metrics
 - Prompt versioning and optimization
 
+### dapr-scheduler (Phase V)
+**Use Skill tool**: `Skill({ skill: "dapr-scheduler" })`
+
+This skill implements Dapr Jobs API for exact-time task reminder scheduling in Phase V event-driven architecture.
+
+**When to invoke**:
+- User says "Implement task reminders" or "Schedule jobs with Dapr"
+- Creating exact-time job scheduling (not cron patterns)
+- Integrating Dapr Jobs API with FastAPI
+- Need task reminder functionality
+- Implementing due date notifications
+
+**What it provides**:
+- DaprJobScheduler class for job scheduling via POST /v1.0/jobs
+- JobManager utilities for task reminder management
+- FastAPI callback endpoint (/api/jobs/trigger) for job execution
+- Job management endpoints (schedule, cancel, reschedule, list)
+- Dapr component YAML for job scheduler
+- Integration with task CRUD operations
+- One-time and recurring job support
+- State persistence via Redis
+- Retry policies and idempotency
+- Comprehensive testing patterns
+
+**Example integration**:
+```python
+from skills.dapr_scheduler import JobManager
+
+job_manager = JobManager()
+
+# Schedule reminder when task created with due date
+@router.post("/api/tasks")
+async def create_task(task: TaskCreate):
+    new_task = await db.create_task(task)
+    if new_task.due_date:
+        job_manager.schedule_task_reminder(
+            task_id=new_task.id,
+            user_id=new_task.user_id,
+            due_date=new_task.due_date
+        )
+    return new_task
+```
+
 ### performance-analyzer
 **Use Skill tool**: `Skill({ skill: "performance-analyzer" })`
 
