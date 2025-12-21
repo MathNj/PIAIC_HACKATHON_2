@@ -1,0 +1,64 @@
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: job-scheduler
+spec:
+  type: jobs.scheduler
+  version: v1
+  metadata:
+    # State store for job persistence
+    - name: stateStore
+      value: "statestore"
+
+    # Optional: Job execution timeout
+    - name: jobTimeout
+      value: "5m"
+
+    # Optional: Max concurrent jobs
+    - name: maxConcurrentJobs
+      value: "10"
+
+    # Optional: Retry policy
+    - name: retryPolicy
+      value: |
+        {
+          "maxRetries": 3,
+          "retryInterval": "1m"
+        }
+
+---
+# Required state store component for job persistence
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: statestore
+spec:
+  type: state.redis
+  version: v1
+  metadata:
+    # Redis connection
+    - name: redisHost
+      value: "localhost:6379"
+
+    - name: redisPassword
+      secretKeyRef:
+        name: redis-secret
+        key: password
+
+    # Enable TTL for automatic cleanup
+    - name: enableTTL
+      value: "true"
+
+    # Optional: Use Redis Streams for pub/sub
+    - name: actorStateStore
+      value: "true"
+
+---
+# Secret for Redis password (adjust for your environment)
+apiVersion: v1
+kind: Secret
+metadata:
+  name: redis-secret
+type: Opaque
+stringData:
+  password: "your-redis-password"  # Replace with actual password or use external secret manager
