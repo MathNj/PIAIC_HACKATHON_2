@@ -1,0 +1,33 @@
+apiVersion: cluster.redpanda.com/v1alpha1
+kind: Cluster
+metadata:
+  name: my-cluster
+spec:
+  image: "vectorized/redpanda"
+  version: "v23.2.1"
+  replicas: 1
+  resources:
+    requests:
+      cpu: 500m
+      memory: 1Gi
+    limits:
+      cpu: 1000m
+      memory: 1Gi
+  storage:
+    capacity: 10Gi
+    storageClassName: ""  # Use default storage class, will be ephemeral
+  configuration:
+    rpcServer:
+      port: 33145
+    kafkaApi:
+      - port: 9092
+    pandaproxyApi:
+      - port: 8082
+    schemaRegistry:
+      port: 8081
+    adminApi:
+      - port: 9644
+    developerMode: true  # Enable for Minikube
+  # Kafka-compatible configuration
+  kafkaEnableAuthorization: false
+  superUsers: []
