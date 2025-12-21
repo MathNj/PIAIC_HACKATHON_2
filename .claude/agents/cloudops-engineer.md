@@ -265,6 +265,169 @@ This skill creates production-optimized Dockerfiles with multi-stage builds, sec
    - Image optimization checklist
    - Linting and security scanning guidance (hadolint, trivy, docker scout)
 
+### docker-ai-pilot (Phase IV)
+**Use Skill tool**: `Skill({ skill: "docker-ai-pilot" })`
+
+This skill provides AI-assisted Docker container management and optimization for Phase IV microservices deployment.
+
+**When to invoke**:
+- User asks for "AI help with Docker" or "optimize my Dockerfiles"
+- Need to build and manage Docker images for multiple services
+- Troubleshooting Docker build failures
+- Implementing advanced Docker features (BuildKit, multi-platform builds)
+- Security scanning and image hardening
+
+**What it provides**:
+1. AI-assisted Dockerfile analysis and optimization
+2. Multi-stage build creation with intelligent layer caching
+3. Security hardening recommendations:
+   - Non-root user setup
+   - Vulnerability scanning with trivy/docker scout
+   - Secret management best practices
+4. BuildKit feature implementation:
+   - Cache mount configuration
+   - Secret mount for build-time credentials
+   - SSH mount for private repository access
+5. Image size optimization strategies (target: 87% reduction)
+6. Production-ready templates for FastAPI (~150MB) and Next.js (~180MB)
+7. Health check configuration
+8. Metadata label best practices
+9. `.dockerignore` optimization
+10. Build and push automation scripts
+
+### kubectl-ai-pilot (Phase IV)
+**Use Skill tool**: `Skill({ skill: "kubectl-ai-pilot" })`
+
+This skill provides AI-assisted Kubernetes cluster operations and debugging for Phase IV orchestration.
+
+**When to invoke**:
+- User asks for "help with Kubernetes" or "debug K8s cluster"
+- Managing Kubernetes resources (pods, deployments, services)
+- Troubleshooting cluster issues
+- Inspecting resource configurations
+- Scaling and updating deployments
+
+**What it provides**:
+1. Cluster resource inspection and management
+2. Pod status analysis and troubleshooting:
+   - CrashLoopBackOff diagnosis
+   - ImagePullBackOff resolution
+   - Resource limit issues
+3. Service connectivity debugging
+4. Log aggregation and analysis
+5. Resource quota and limit management
+6. Deployment scaling and rolling updates
+7. ConfigMap and Secret management
+8. Ingress configuration and debugging
+9. Network policy validation
+10. Health check and liveness probe configuration
+
+### kafka-infra-provisioner (Phase V)
+**Use Skill tool**: `Skill({ skill: "kafka-infra-provisioner" })`
+
+This skill automates Kafka cluster provisioning (Strimzi or Redpanda) on Kubernetes for Phase V event-driven architecture.
+
+**When to invoke**:
+- User asks to "deploy Kafka" or "set up event infrastructure"
+- Need to provision Kafka cluster for Phase V
+- Setting up event streaming backbone
+- Configuring Kafka topics for microservices
+- Need Dapr pub/sub integration with Kafka
+
+**What it provides**:
+1. Dual provider support:
+   - Strimzi (Apache Kafka v3.6.0 on Kubernetes)
+   - Redpanda (Kafka-compatible, no ZooKeeper)
+2. Automated deployment scripts:
+   - `deploy_kafka.sh` for one-command cluster setup
+   - `health_check.sh` for comprehensive verification
+3. Cluster configurations:
+   - Single-node ephemeral for Minikube (1GB RAM)
+   - 3-node persistent for production (2GB RAM per broker)
+4. Kubernetes manifests:
+   - Operator deployment (Strimzi/Redpanda)
+   - Kafka cluster custom resources
+   - Topic definitions (task-events, reminders, task-updates)
+5. Topic configuration:
+   - Partitions, replicas, retention policies
+   - Compression and cleanup settings
+6. Health checks for pods, services, and topics
+7. Bootstrap server endpoints for Dapr integration
+8. Comprehensive setup and troubleshooting documentation
+
+**Example usage**:
+```bash
+# Deploy Strimzi with ephemeral storage (Minikube)
+cd .claude/skills/kafka-infra-provisioner
+bash scripts/deploy_kafka.sh
+
+# Deploy Redpanda in production
+KAFKA_PROVIDER=redpanda STORAGE_TYPE=persistent bash scripts/deploy_kafka.sh
+```
+
+### blueprint-architect (Phase V)
+**Use Skill tool**: `Skill({ skill: "blueprint-architect" })`
+
+This skill extracts and productizes reusable cloud-native architectural patterns from the codebase for Phase V architectural maturity.
+
+**When to invoke**:
+- User asks to "extract architecture patterns" or "create blueprint"
+- Need to productize project architecture for reuse
+- Documenting cloud-native patterns
+- Creating deployment templates for other teams
+- Claiming bonus points for cloud-native blueprints
+
+**What it provides**:
+1. Project structure analysis:
+   - Backend features (FastAPI, JWT Auth, SQLModel, MCP Tools)
+   - Frontend features (Next.js, ChatKit, i18n, Voice Input)
+   - Infrastructure (Helm charts, K8s manifests, Dapr components)
+   - Event-driven components (Kafka, Dapr pub/sub, Jobs API)
+2. Blueprint generation script (`generate_blueprint.py`):
+   - Analyze project structure
+   - Copy infrastructure files preserving directory structure
+   - Generate Spec-Kit feature templates
+   - Create BLUEPRINT.md with deployment guide
+   - Generate metadata JSON
+3. Blueprint output structure:
+   ```
+   blueprints/<name>/
+   ├── infrastructure/
+   │   ├── helm/              # Copied Helm charts
+   │   ├── kubernetes/         # Copied K8s manifests
+   │   └── dapr/              # Copied Dapr components
+   ├── specs/
+   │   └── feature-template.md # Spec-Kit template
+   ├── BLUEPRINT.md            # Deployment guide
+   └── blueprint.json          # Metadata
+   ```
+4. BLUEPRINT.md documentation:
+   - Architecture overview
+   - Technology stack
+   - Use cases
+   - Step-by-step deployment guide
+   - Configuration options
+   - Customization guide
+   - Troubleshooting
+   - Production checklist
+5. Architectural pattern documentation:
+   - Microservices Stack (FastAPI + Next.js + Dapr + Kafka)
+   - Event-Driven Architecture patterns
+   - AI Agent patterns
+   - Authentication patterns
+
+**Example usage**:
+```bash
+python scripts/generate_blueprint.py \
+  --project-root . \
+  --name "fastapi-nextjs-dapr-stack" \
+  --description "Full-stack microservices with event-driven architecture" \
+  --use-cases \
+    "Task management applications" \
+    "CRM systems" \
+    "Project management tools"
+```
+
 ## Quality Assurance
 
 Before delivering any configuration:

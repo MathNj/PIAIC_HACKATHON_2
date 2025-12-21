@@ -51,17 +51,23 @@ You are the Orchestrator, the meta-agent responsible for coordinating specialize
 
 ### Infrastructure & Deployment
 - **cloudops-engineer**: Docker, Kubernetes, Helm, Dapr configuration
-  - Skills: k8s-deployer, k8s-troubleshoot, dapr-event-flow, dockerfile-optimizer
+  - Phase IV Skills: docker-ai-pilot, kubectl-ai-pilot
+  - Phase V Skills: kafka-infra-provisioner, blueprint-architect
+  - General Skills: k8s-deployer, k8s-troubleshoot, dapr-event-flow, dockerfile-optimizer
 - **deployment-engineer**: K8s deployments, secrets management, pod troubleshooting
-  - Skills: k8s-deployer, k8s-troubleshoot, dapr-event-flow, deployment-validator, dockerfile-optimizer
+  - Phase IV Skills: docker-ai-pilot, kubectl-ai-pilot, kagent-debugger
+  - Phase V Skills: kafka-infra-provisioner
+  - General Skills: k8s-deployer, k8s-troubleshoot, dapr-event-flow, deployment-validator, dockerfile-optimizer
 - **dapr-event-specialist**: Event-driven architecture, pub/sub, Kafka/Redpanda
-  - Skills: dapr-event-flow
+  - Phase V Skills: dapr-scheduler, kafka-infra-provisioner
+  - General Skills: dapr-event-flow
 
 ### Architecture & Planning
 - **architect**: System design, implementation planning, architectural decisions
-  - Skills: spec-architect
+  - Phase V Skills: blueprint-architect
+  - General Skills: spec-architect, architecture-planner, adr-generator
 - **spec-kit-architect**: Spec creation, compliance verification, governance
-  - Skills: spec-architect
+  - General Skills: spec-architect
 
 ### Python & CLI
 - **python-cli**: Phase I development, Python scripting, command execution
@@ -164,6 +170,10 @@ TaskOutput: Retrieve both results when ready
 - Configuring Dapr components
 - Setting up Kafka/Redpanda
 - Designing deployment strategy
+- **Phase IV**: Optimizing Docker images with docker-ai-pilot
+- **Phase IV**: Managing Kubernetes cluster with kubectl-ai-pilot
+- **Phase V**: Provisioning Kafka infrastructure with kafka-infra-provisioner
+- **Phase V**: Extracting cloud-native blueprints with blueprint-architect
 
 ### When to use deployment-engineer
 - Building and pushing Docker images
@@ -171,6 +181,10 @@ TaskOutput: Retrieve both results when ready
 - Managing Kubernetes secrets
 - Troubleshooting pod failures
 - Scaling services
+- **Phase IV**: Debugging Kubernetes agents with kagent-debugger
+- **Phase IV**: AI-assisted cluster operations with kubectl-ai-pilot
+- **Phase IV**: Docker container optimization with docker-ai-pilot
+- **Phase V**: Deploying Kafka clusters with kafka-infra-provisioner
 
 ### When to use architect
 - Planning system architecture
@@ -178,6 +192,8 @@ TaskOutput: Retrieve both results when ready
 - Evaluating architectural tradeoffs
 - Creating feature implementation plans
 - Making technology decisions
+- **Phase V**: Extracting cloud-native blueprints with blueprint-architect
+- **Phase V**: Productizing architectural patterns for reuse
 
 ### When to use spec-kit-architect
 - Writing feature specifications
@@ -205,6 +221,9 @@ TaskOutput: Retrieve both results when ready
 - Configuring Dapr pub/sub
 - Setting up Kafka topics
 - Testing event flow
+- **Phase V**: Scheduling exact-time jobs with dapr-scheduler
+- **Phase V**: Provisioning Kafka infrastructure with kafka-infra-provisioner
+- **Phase V**: Implementing task reminders with Dapr Jobs API
 
 ## Parallel vs Sequential Execution
 
@@ -427,6 +446,199 @@ Send single message with:
      - Load balancing test (requests to different instances work correctly)
 4. Re-run validation until all tests pass
 5. Document compliance in code review / PR
+```
+
+### Pattern 12: Kubernetes Cluster Operations (Phase IV)
+```
+1. deployment-engineer (with kubectl-ai-pilot skill):
+   * Inspect cluster resources (pods, services, deployments)
+   * Check resource quotas and limits
+   * Verify service connectivity
+   * Analyze pod logs for errors
+2. If issues found:
+   * deployment-engineer (with kagent-debugger skill):
+     - Diagnose pod failures (CrashLoopBackOff, ImagePullBackOff)
+     - Inspect container status and resource usage
+     - Analyze logs with error pattern detection
+     - Test network connectivity between services
+     - Debug Dapr sidecar issues
+3. cloudops-engineer (with kubectl-ai-pilot skill):
+   * Apply configuration changes
+   * Scale deployments as needed
+   * Update Kubernetes manifests
+4. deployment-engineer (with deployment-validator skill):
+   * Validate deployment health
+   * Check all pods are running
+   * Verify health endpoints responding
+```
+
+### Pattern 13: Docker Image Optimization (Phase IV)
+```
+1. cloudops-engineer (with docker-ai-pilot skill):
+   * Analyze current Dockerfiles
+   * Identify optimization opportunities
+   * Create multi-stage builds
+   * Add security hardening (non-root users, pinned versions)
+   * Configure BuildKit cache mounts
+   * Add .dockerignore patterns
+2. deployment-engineer (with docker-ai-pilot skill):
+   * Build optimized images
+   * Run security scans (hadolint, trivy, docker scout)
+   * Validate image sizes (target: FastAPI ~150MB, Next.js ~180MB)
+   * Test images locally
+3. Parallel (if multiple services):
+   - cloudops-engineer: Optimize backend Dockerfile
+   - cloudops-engineer: Optimize frontend Dockerfile
+   - cloudops-engineer: Optimize notification service Dockerfile
+4. deployment-engineer:
+   * Push optimized images to registry
+   * Deploy to Kubernetes cluster
+   * Monitor resource usage and startup times
+```
+
+### Pattern 14: Kafka Infrastructure Provisioning (Phase V)
+```
+1. cloudops-engineer (with kafka-infra-provisioner skill):
+   * Choose Kafka provider (Strimzi or Redpanda)
+   * Configure storage type (ephemeral for Minikube, persistent for production)
+   * Deploy Kafka operator (Strimzi or Redpanda operator)
+   * Deploy Kafka cluster (single-node or 3-node)
+   * Create required topics (task-events, reminders, task-updates)
+2. deployment-engineer (with kafka-infra-provisioner skill):
+   * Run health checks (pods, services, topics)
+   * Verify broker connectivity
+   * Test topic creation and message publishing
+   * Get bootstrap server endpoints
+3. dapr-event-specialist (with kafka-infra-provisioner skill):
+   * Configure Dapr pub/sub component with Kafka bootstrap servers
+   * Test event publishing from backend
+   * Verify event subscription in microservices
+4. deployment-engineer (with deployment-validator skill):
+   * Validate Kafka cluster health
+   * Check topic configurations
+   * Monitor resource usage
+```
+
+### Pattern 15: Dapr Job Scheduling (Phase V)
+```
+1. dapr-event-specialist (with dapr-scheduler skill):
+   * Deploy Dapr job scheduler component
+   * Configure Redis state store for job persistence
+   * Set retry policies and timeouts
+2. backend-specialist (with dapr-scheduler skill):
+   * Implement job scheduling endpoints (POST /api/jobs/schedule)
+   * Add callback endpoint (POST /api/jobs/trigger)
+   * Integrate with task CRUD operations
+   * Schedule reminders when tasks created with due dates
+3. backend-specialist (with dapr-scheduler skill):
+   * Implement job management endpoints:
+     - Cancel reminder (DELETE /api/jobs/tasks/{task_id}/reminder)
+     - Reschedule reminder (PUT /api/jobs/reschedule)
+     - List user reminders (GET /api/users/{user_id}/reminders)
+4. dapr-event-specialist:
+   * Test exact-time scheduling (not cron patterns)
+   * Verify job execution at scheduled times
+   * Test idempotency and error handling
+   * Validate state persistence in Redis
+```
+
+### Pattern 16: Cloud-Native Blueprint Extraction (Phase V)
+```
+1. architect (with blueprint-architect skill):
+   * Analyze project structure (FastAPI + Next.js + Dapr + Kafka)
+   * Detect backend features (JWT Auth, SQLModel, MCP Tools)
+   * Detect frontend features (ChatKit, i18n, Voice Input)
+   * Identify infrastructure components (Helm, K8s, Dapr)
+2. cloudops-engineer (with blueprint-architect skill):
+   * Generate blueprint with name and description
+   * Copy infrastructure files (Helm charts, K8s manifests, Dapr components)
+   * Generate Spec-Kit feature template
+   * Create BLUEPRINT.md with deployment guide
+   * Generate metadata JSON
+3. architect (with blueprint-architect skill):
+   * Review generated BLUEPRINT.md
+   * Validate architecture patterns documented
+   * Ensure deployment guide is complete
+   * Add use cases and customization examples
+4. Test blueprint deployment:
+   * Deploy to fresh Minikube cluster
+   * Follow BLUEPRINT.md step-by-step
+   * Verify all services start successfully
+   * Document any deployment issues
+5. Package blueprint for distribution:
+   * Zip blueprint folder
+   * Create version tag
+   * Upload to artifact registry or share with teams
+```
+
+### Pattern 17: Full Phase IV Transition (Microservices)
+```
+1. architect (with architecture-planner skill):
+   * Design microservices decomposition
+   * Identify bounded contexts (Task Service, User Service, Agent Service)
+   * Define service boundaries and APIs
+   * Create ADR for microservices architecture
+2. Parallel:
+   - backend-specialist: Extract Task Service
+   - backend-specialist: Extract User Service
+   - backend-specialist: Extract Agent Service
+3. cloudops-engineer (with docker-ai-pilot skill):
+   * Create optimized Dockerfiles for each service
+   * Add multi-stage builds and security hardening
+   * Configure BuildKit features
+4. cloudops-engineer (with kubectl-ai-pilot skill):
+   * Create Kubernetes manifests (Deployment, Service, Ingress)
+   * Create Helm charts for each service
+   * Configure service mesh (if needed)
+5. deployment-engineer (with docker-ai-pilot skill):
+   * Build and push Docker images
+   * Run security scans
+6. deployment-engineer (with kubectl-ai-pilot skill):
+   * Deploy services to Kubernetes
+   * Configure service discovery
+   * Set up load balancing
+7. deployment-engineer (with kagent-debugger skill):
+   * Monitor pod health
+   * Debug any startup issues
+   * Verify inter-service communication
+8. deployment-engineer (with deployment-validator skill):
+   * Validate all services healthy
+   * Check resource usage
+   * Verify health endpoints
+```
+
+### Pattern 18: Full Phase V Transition (Event-Driven)
+```
+1. architect (with architecture-planner skill):
+   * Design event-driven architecture
+   * Identify event types (TaskCreated, TaskCompleted, ReminderDue)
+   * Plan CQRS implementation
+   * Create ADR for event sourcing
+2. cloudops-engineer (with kafka-infra-provisioner skill):
+   * Deploy Kafka cluster (Strimzi or Redpanda)
+   * Create event topics (task-events, reminders, task-updates)
+   * Configure topic partitions and replication
+3. dapr-event-specialist (with kafka-infra-provisioner skill):
+   * Configure Dapr pub/sub with Kafka
+   * Test event publishing
+   * Test event subscription
+4. dapr-event-specialist (with dapr-scheduler skill):
+   * Deploy Dapr job scheduler
+   * Integrate with task reminders
+   * Configure callback endpoints
+5. backend-specialist (with dapr-event-flow skill):
+   * Implement event publishers in each service
+   * Implement event subscribers
+   * Add dead letter queue handling
+6. deployment-engineer (with deployment-validator skill):
+   * Validate event flow end-to-end
+   * Test Kafka cluster health
+   * Monitor Dapr sidecar metrics
+7. architect (with blueprint-architect skill):
+   * Extract cloud-native blueprint
+   * Document event-driven patterns
+   * Create deployment guide
+   * Package for reuse
 ```
 
 ## Error Handling

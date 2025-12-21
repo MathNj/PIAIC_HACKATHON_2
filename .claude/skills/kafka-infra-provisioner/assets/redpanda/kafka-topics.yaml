@@ -1,0 +1,61 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: create-kafka-topics
+spec:
+  template:
+    spec:
+      restartPolicy: OnFailure
+      containers:
+        - name: create-topics
+          image: vectorized/redpanda:v23.2.1
+          command:
+            - /bin/bash
+            - -c
+            - |
+              set -e
+
+              BOOTSTRAP_SERVER="my-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
+
+              echo "Waiting for Kafka to be ready..."
+              until rpk cluster info --brokers $BOOTSTRAP_SERVER &> /dev/null; do
+                echo "Waiting for Kafka brokers..."
+                sleep 5
+              done
+
+              echo "Creating topics..."
+
+              # Create task-events topic
+              rpk topic create task-events \
+                --brokers $BOOTSTRAP_SERVER \
+                --partitions 3 \
+                --replicas 1 \
+                --topic-config retention.ms=604800000 \
+                --topic-config compression.type=producer \
+                --topic-config cleanup.policy=delete \
+                || echo "Topic task-events may already exist"
+
+              # Create reminders topic
+              rpk topic create reminders \
+                --brokers $BOOTSTRAP_SERVER \
+                --partitions 3 \
+                --replicas 1 \
+                --topic-config retention.ms=2592000000 \
+                --topic-config compression.type=producer \
+                --topic-config cleanup.policy=delete \
+                || echo "Topic reminders may already exist"
+
+              # Create task-updates topic
+              rpk topic create task-updates \
+                --brokers $BOOTSTRAP_SERVER \
+                --partitions 3 \
+                --replicas 1 \
+                --topic-config retention.ms=604800000 \
+                --topic-config compression.type=producer \
+                --topic-config cleanup.policy=delete \
+                || echo "Topic task-updates may already exist"
+
+              echo "Verifying topics..."
+              rpk topic list --brokers $BOOTSTRAP_SERVER
+
+              echo "Topics created successfully!"

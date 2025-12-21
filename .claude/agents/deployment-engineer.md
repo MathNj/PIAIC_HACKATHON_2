@@ -139,6 +139,296 @@ This skill creates production-optimized Dockerfiles with multi-stage builds, sec
 - `.dockerignore` patterns
 - Comprehensive best practices guide with troubleshooting
 
+### docker-ai-pilot (Phase IV)
+**Use Skill tool**: `Skill({ skill: "docker-ai-pilot" })`
+
+This skill provides AI-assisted Docker container management and optimization for Phase IV microservices deployment.
+
+**When to invoke**:
+- User asks for "AI help with Docker" or "optimize my containers"
+- Building Docker images for multiple microservices
+- Troubleshooting Docker build failures or slow builds
+- Implementing advanced Docker features (BuildKit, multi-platform)
+- Running security scans on container images
+- Need to reduce image sizes significantly
+
+**What it provides**:
+1. AI-assisted Dockerfile analysis and optimization recommendations
+2. Automated multi-stage build creation with intelligent layer caching
+3. Security scanning and hardening:
+   - Run vulnerability scans with trivy and docker scout
+   - Configure non-root users
+   - Remove secrets from image layers
+   - Pin dependency versions
+4. BuildKit advanced features:
+   - Cache mount configuration for faster rebuilds
+   - Secret mount for build-time credentials
+   - SSH mount for private repository access
+5. Image size optimization (target: 87% reduction from baseline)
+6. Production-ready templates for FastAPI (~150MB) and Next.js (~180MB)
+7. Health check configuration and validation
+8. Metadata label best practices (OCI annotations)
+9. `.dockerignore` optimization for minimal context
+10. Build and push automation scripts with error handling
+
+**Example workflow**:
+```bash
+# Analyze current Dockerfile
+Skill({ skill: "docker-ai-pilot", args: "analyze backend/Dockerfile" })
+
+# Build optimized image
+docker build -t backend:optimized -f backend/Dockerfile.optimized .
+
+# Scan for vulnerabilities
+trivy image backend:optimized
+docker scout cves backend:optimized
+
+# Push to registry
+docker push registry.digitalocean.com/todo-chatbot-reg/backend:optimized
+```
+
+### kubectl-ai-pilot (Phase IV)
+**Use Skill tool**: `Skill({ skill: "kubectl-ai-pilot" })`
+
+This skill provides AI-assisted Kubernetes cluster operations and debugging for Phase IV orchestration.
+
+**When to invoke**:
+- User asks for "help with Kubernetes" or "debug my cluster"
+- Managing Kubernetes resources (pods, deployments, services, ingress)
+- Troubleshooting deployment issues (pods not starting, crashes)
+- Inspecting and modifying resource configurations
+- Scaling deployments or updating rolling strategies
+- Investigating performance or connectivity issues
+
+**What it provides**:
+1. Cluster resource inspection and management:
+   - List and describe pods, deployments, services, configmaps, secrets
+   - Check resource quotas and limits
+   - Inspect node health and capacity
+2. Pod status analysis and troubleshooting:
+   - Diagnose CrashLoopBackOff (application crashes, missing dependencies)
+   - Resolve ImagePullBackOff (registry auth, image name typos)
+   - Fix resource limit issues (OOMKilled, CPU throttling)
+   - Debug init container failures
+3. Service connectivity debugging:
+   - Test service endpoints (ClusterIP, NodePort, LoadBalancer)
+   - Validate DNS resolution within cluster
+   - Check network policies blocking traffic
+   - Trace request paths through ingress
+4. Log aggregation and analysis:
+   - Fetch logs from all pods in a deployment
+   - Filter logs by severity or keywords
+   - Follow logs in real-time across multiple containers
+   - Access previous container logs after crashes
+5. Resource quota and limit management:
+   - Check namespace resource usage
+   - Update deployment resource requests/limits
+   - Identify resource-constrained pods
+6. Deployment scaling and rolling updates:
+   - Scale deployments up/down
+   - Perform rolling updates with zero downtime
+   - Rollback failed deployments
+   - Monitor rollout status
+7. ConfigMap and Secret management:
+   - Create/update ConfigMaps and Secrets
+   - Mount configuration into pods
+   - Trigger pod restarts after config changes
+8. Ingress configuration and debugging:
+   - Configure ingress rules and TLS
+   - Troubleshoot 404/502 errors
+   - Validate backend service connections
+9. Network policy validation:
+   - Test pod-to-pod connectivity
+   - Verify network policy rules
+   - Debug DNS issues
+10. Health check and liveness probe configuration:
+    - Configure HTTP/TCP/exec probes
+    - Tune probe timing (initial delay, period, timeout)
+    - Debug failing health checks
+
+**Example usage**:
+```bash
+# Inspect deployment status
+kubectl get deployments
+kubectl describe deployment backend
+
+# Debug pod issues
+kubectl get pods
+kubectl describe pod backend-xxx
+kubectl logs backend-xxx -c backend
+kubectl logs backend-xxx -c daprd  # Dapr sidecar
+
+# Scale deployment
+kubectl scale deployment/backend --replicas=3
+
+# Update and monitor rollout
+kubectl set image deployment/backend backend=backend:v2
+kubectl rollout status deployment/backend
+```
+
+### kagent-debugger (Phase IV)
+**Use Skill tool**: `Skill({ skill: "kagent-debugger" })`
+
+This skill specializes in Kubernetes agent debugging with deep pod inspection and log analysis for Phase IV troubleshooting.
+
+**When to invoke**:
+- User reports "pods keep crashing" or "deployment stuck"
+- Need deep analysis of pod failures beyond basic kubectl commands
+- Investigating Dapr sidecar issues (injection failures, communication errors)
+- Analyzing container logs for error patterns
+- Debugging resource usage spikes or memory leaks
+- Network connectivity issues between services
+
+**What it provides**:
+1. Deep pod inspection and container status analysis:
+   - Detailed container state (Waiting, Running, Terminated)
+   - Exit codes and termination reasons
+   - Restart counts and patterns
+   - Container resource usage trends
+2. Advanced log analysis with error pattern detection:
+   - Identify common error patterns (OutOfMemory, connection refused, DNS failures)
+   - Extract stack traces and error messages
+   - Correlate errors across multiple pods
+   - Detect log anomalies and spikes
+3. Resource usage monitoring and profiling:
+   - CPU and memory usage per container
+   - Identify resource-constrained containers
+   - Detect memory leaks (increasing memory over time)
+   - Compare usage against requests/limits
+4. Network connectivity testing and debugging:
+   - Test pod-to-pod connectivity
+   - Verify service DNS resolution
+   - Check ingress routing
+   - Trace network packets (if tools available)
+5. Dapr sidecar troubleshooting:
+   - Verify Dapr injection (2/2 containers)
+   - Check Dapr logs for component initialization errors
+   - Validate Dapr component configurations
+   - Test Dapr service invocation
+   - Debug pub/sub subscription issues
+6. Init container and startup debugging:
+   - Check init container logs and status
+   - Verify init container dependencies
+   - Debug startup probe failures
+7. Event timeline analysis:
+   - Review Kubernetes events for deployment/pod
+   - Identify scheduling failures
+   - Detect volume mount errors
+   - Track pod lifecycle events
+8. Container filesystem inspection:
+   - Exec into running containers for debugging
+   - Check file permissions and ownership
+   - Verify configuration files loaded correctly
+9. Automated remediation suggestions:
+   - Recommend fixes for common issues
+   - Provide kubectl commands to resolve problems
+   - Suggest resource limit adjustments
+10. Health check validation:
+    - Test liveness and readiness probes manually
+    - Validate probe endpoints responding
+    - Check probe configuration correctness
+
+**Example workflow**:
+```bash
+# Deep pod analysis
+Skill({ skill: "kagent-debugger", args: "analyze pod backend-xxx" })
+
+# Analyze Dapr sidecar issues
+kubectl logs backend-xxx -c daprd
+kubectl exec backend-xxx -c daprd -- curl localhost:3500/v1.0/healthz
+
+# Check resource usage
+kubectl top pod backend-xxx --containers
+
+# Test network connectivity
+kubectl exec backend-xxx -- curl http://frontend:3000/health
+kubectl exec backend-xxx -- nslookup frontend
+```
+
+### kafka-infra-provisioner (Phase V)
+**Use Skill tool**: `Skill({ skill: "kafka-infra-provisioner" })`
+
+This skill automates Kafka cluster provisioning (Strimzi or Redpanda) on Kubernetes for Phase V event-driven architecture.
+
+**When to invoke**:
+- User asks to "deploy Kafka cluster" or "set up event streaming"
+- Setting up Phase V event-driven infrastructure
+- Provisioning Kafka for Dapr pub/sub integration
+- Creating event topics for microservices
+- Need high-throughput message broker
+
+**What it provides**:
+1. Dual Kafka provider support:
+   - **Strimzi**: Apache Kafka v3.6.0 on Kubernetes with ZooKeeper
+   - **Redpanda**: Kafka-compatible without ZooKeeper (simpler, faster)
+2. Automated deployment scripts:
+   - `deploy_kafka.sh`: One-command cluster provisioning
+   - `health_check.sh`: Comprehensive health verification
+3. Flexible cluster configurations:
+   - **Ephemeral**: Single-node for Minikube (1GB RAM, data lost on restart)
+   - **Persistent**: 3-node for production (2GB RAM per broker, persistent volumes)
+4. Kubernetes manifest generation:
+   - Operator deployment (Strimzi or Redpanda)
+   - Kafka cluster custom resources (CRs)
+   - Topic definitions with proper configuration
+5. Topic management:
+   - Pre-configured topics: task-events, reminders, task-updates
+   - Configurable partitions, replicas, retention policies
+   - Compression (producer) and cleanup (delete) settings
+6. Comprehensive health checks:
+   - Verify operator pods running
+   - Check Kafka broker pods ready
+   - Validate ZooKeeper pods (Strimzi only)
+   - Test topic creation and accessibility
+   - Confirm service endpoints available
+7. Dapr integration preparation:
+   - Get bootstrap server endpoints
+   - Document Dapr pub/sub component configuration
+   - Provide connection strings for microservices
+8. Complete setup and troubleshooting documentation:
+   - Step-by-step deployment guide
+   - Common issues and resolutions
+   - Production deployment best practices
+   - Performance tuning recommendations
+
+**Example usage**:
+```bash
+# Deploy Strimzi with ephemeral storage (Minikube)
+cd .claude/skills/kafka-infra-provisioner
+bash scripts/deploy_kafka.sh
+
+# Verify deployment
+bash scripts/health_check.sh
+
+# Expected output:
+# ✅ All health checks passed!
+# Bootstrap Servers: my-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092
+# Topics: task-events, reminders, task-updates
+
+# Deploy Redpanda in production
+KAFKA_PROVIDER=redpanda STORAGE_TYPE=persistent bash scripts/deploy_kafka.sh
+
+# Configure Dapr pub/sub component
+kubectl apply -f infrastructure/dapr/components/kafka-pubsub.yaml
+```
+
+**Dapr Integration**:
+After Kafka deployment, configure Dapr pub/sub:
+```yaml
+apiVersion: dapr.io/v1alpha1
+kind: Component
+metadata:
+  name: kafka-pubsub
+spec:
+  type: pubsub.kafka
+  version: v1
+  metadata:
+    - name: brokers
+      value: "my-cluster-kafka-bootstrap.kafka.svc.cluster.local:9092"
+    - name: consumerGroup
+      value: "todo-app"
+```
+
 ## Project Services
 
 ### Frontend
