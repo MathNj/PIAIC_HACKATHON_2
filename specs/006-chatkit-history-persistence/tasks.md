@@ -42,16 +42,40 @@
 
 **⚠️ CRITICAL**: No user story work can begin until this phase is complete
 
+**Agent Delegation**:
+- Use **database-migration-specialist** agent with **db-migration-wizard** skill for T006-T007
+- Use **backend-specialist** agent with **backend-scaffolder** skill for T008-T014
+- Use **frontend-specialist** agent for T015
+
 - [ ] T006 Create Alembic migration for conversations and messages tables in backend/alembic/versions/xxxx_add_conversations_messages.py
+  - **Agent**: database-migration-specialist
+  - **Skill**: db-migration-wizard
+  - **Command**: Invoke skill with conversation and message model definitions
 - [ ] T007 Run Alembic migration to create tables: `alembic upgrade head`
+  - **Agent**: database-migration-specialist
+  - **Skill**: db-migration-wizard
 - [ ] T008 [P] Add Conversation SQLModel to backend/app/models.py with user_id foreign key, title, timestamps, deleted_at
+  - **Agent**: backend-specialist
+  - **Skill**: backend-scaffolder
 - [ ] T009 [P] Add Message SQLModel to backend/app/models.py with conversation_id foreign key, role enum, content, tool_calls JSONB
+  - **Agent**: backend-specialist
+  - **Skill**: backend-scaffolder
 - [ ] T010 [P] Create ConversationCreate, ConversationUpdate, ConversationResponse schemas in backend/app/schemas/conversation.py
+  - **Agent**: backend-specialist
+  - **Skill**: crud-builder
 - [ ] T011 [P] Create MessageCreate, MessageResponse, SendMessageResponse schemas in backend/app/schemas/message.py
+  - **Agent**: backend-specialist
+  - **Skill**: crud-builder
 - [ ] T012 Create chat router file at backend/app/routers/chat.py with APIRouter setup
+  - **Agent**: backend-specialist
+  - **Skill**: fastapi-endpoint-generator
 - [ ] T013 Register chat router in backend/app/main.py with app.include_router(chat.router)
+  - **Agent**: backend-specialist
 - [ ] T014 [P] Create agents directory structure: backend/app/agents/__init__.py
+  - **Agent**: backend-specialist
 - [ ] T015 [P] Create frontend API client at frontend/src/lib/api/chat.ts with fetchWithAuth helper
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
 
 **Checkpoint**: Foundation ready - database tables exist, models defined, router registered
 
@@ -63,34 +87,93 @@
 
 **Independent Test**: User can click "Chat with AI", type "Help me organize my tasks", send message, and receive AI response with task information displayed properly
 
+**Agent Delegation**:
+- Use **backend-specialist** agent with **chatkit-integrator** and **openai-agents-sdk** skills for backend tasks
+- Use **frontend-specialist** agent with **chatkit-integrator** skill for frontend tasks
+- Use **backend-specialist** agent with **stateless-agent-enforcer** skill for stateless validation
+
 ### Implementation for User Story 1
 
 **Backend: Chat API Endpoints**
 
 - [ ] T016 [P] [US1] Implement POST /api/chat/conversations endpoint in backend/app/routers/chat.py to create new conversation
+  - **Agent**: backend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Generate conversation CRUD endpoints with JWT auth
 - [ ] T017 [P] [US1] Implement POST /api/chat/conversations/{id}/messages endpoint in backend/app/routers/chat.py (stub - returns user message only, no agent)
+  - **Agent**: backend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Generate message persistence endpoint
 - [ ] T018 [US1] Add conversation ownership validation helper in backend/app/routers/chat.py: validate_conversation_ownership()
+  - **Agent**: backend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Add tenant isolation validation
 - [ ] T019 [US1] Update POST messages endpoint to save user message to database with role='user'
+  - **Agent**: backend-specialist
+  - **Skill**: chatkit-integrator
 
 **Backend: Stateless Agent Integration**
 
 - [ ] T020 [P] [US1] Create context_manager.py at backend/app/agents/context_manager.py with load_conversation_context() function
+  - **Agent**: backend-specialist
+  - **Skill**: conversation-history-manager
+  - **Command**: Implement context loading from database
 - [ ] T021 [P] [US1] Create chat_agent.py at backend/app/agents/chat_agent.py with run_agent() async function
+  - **Agent**: backend-specialist
+  - **Skill**: openai-agents-sdk
+  - **Command**: Create stateless agent with database context loading
 - [ ] T022 [US1] Implement load_conversation_context() to fetch last 50 messages from database ordered chronologically
+  - **Agent**: backend-specialist
+  - **Skill**: conversation-history-manager
+  - **Command**: Add cursor-based pagination for context loading
 - [ ] T023 [US1] Implement run_agent() to build OpenAI messages array from history and call OpenAI API with existing MCP tools
+  - **Agent**: backend-specialist
+  - **Skill**: openai-agents-sdk
+  - **Command**: Integrate MCP tools with agent runtime
 - [ ] T024 [US1] Add tool execution logic in run_agent() to execute MCP tools and collect results
+  - **Agent**: backend-specialist
+  - **Skill**: openai-agents-sdk
+  - **Command**: Add tool calling support with error handling
 - [ ] T025 [US1] Integrate run_agent() into POST messages endpoint: call agent after saving user message
+  - **Agent**: backend-specialist
+  - **Skill**: agent-orchestrator
+  - **Command**: Wire up agent with JWT auth and session management
 - [ ] T026 [US1] Save assistant response to database with role='assistant' and tool_calls metadata
+  - **Agent**: backend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Persist assistant messages with tool metadata
+- [ ] T026b [US1] Validate stateless agent implementation with compliance tests
+  - **Agent**: backend-specialist
+  - **Skill**: stateless-agent-enforcer
+  - **Command**: Run stateless validation tests (state isolation, concurrency, restart)
 
 **Frontend: Chat UI with Chatkit**
 
 - [ ] T027 [P] [US1] Implement chatApi.createConversation() in frontend/src/lib/api/chat.ts
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Create API client with JWT authentication
 - [ ] T028 [P] [US1] Implement chatApi.sendMessage() in frontend/src/lib/api/chat.ts
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
 - [ ] T029 [US1] Create Chatkit configuration file at frontend/src/lib/chatkit-config.ts with custom adapter
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Configure Chatkit with custom backend adapter
 - [ ] T030 [US1] Implement adapter.createConversation() and adapter.sendMessage() in chatkit-config.ts
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Connect Chatkit to FastAPI backend
 - [ ] T031 [US1] Create chat page at frontend/src/app/chat/page.tsx with ChatKit component integration
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Create chat UI with ChatKit React components
 - [ ] T032 [US1] Configure ChatKit with enableMarkdown: true and enableSyntaxHighlighting: true
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
 - [ ] T033 [US1] Add "Chat" navigation link in frontend/src/app/layout.tsx
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
 
 **Acceptance Criteria Verification**
 
@@ -109,21 +192,48 @@
 
 **Independent Test**: Create conversation, send messages, logout, login, verify conversation loads with all messages in chronological order
 
+**Agent Delegation**:
+- Use **backend-specialist** agent with **conversation-history-manager** skill for backend tasks
+- Use **frontend-specialist** agent with **chatkit-integrator** skill for frontend tasks
+
 ### Implementation for User Story 2
 
 **Backend: Conversation Persistence**
 
 - [ ] T038 [P] [US2] Implement GET /api/chat/conversations/{id}/messages endpoint in backend/app/routers/chat.py
+  - **Agent**: backend-specialist
+  - **Skill**: conversation-history-manager
+  - **Command**: Implement history retrieval endpoint with pagination
 - [ ] T039 [P] [US2] Add pagination support with limit and since parameters to GET messages endpoint
+  - **Agent**: backend-specialist
+  - **Skill**: conversation-history-manager
+  - **Command**: Add cursor-based pagination for message history
 - [ ] T040 [US2] Implement messages query: filter by conversation_id, order by created_at ASC, apply limit
+  - **Agent**: backend-specialist
+  - **Skill**: conversation-history-manager
+  - **Command**: Optimize query with proper indexes
 - [ ] T041 [US2] Return MessageListResponse with messages array and total_count
+  - **Agent**: backend-specialist
+  - **Skill**: conversation-history-manager
 
 **Frontend: Load Conversation History**
 
 - [ ] T042 [P] [US2] Implement chatApi.getMessages() in frontend/src/lib/api/chat.ts with limit and since params
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Create API client method for message history
 - [ ] T043 [US2] Implement adapter.getMessages() in chatkit-config.ts to call chatApi.getMessages()
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Connect Chatkit to history endpoint
 - [ ] T044 [US2] Configure Chatkit to load history on conversation open
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Enable automatic history loading
 - [ ] T045 [US2] Add message polling logic: poll GET messages?since={last_timestamp} every 2 seconds when chat is active
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Implement polling for real-time updates
 
 **Acceptance Criteria Verification**
 
@@ -142,30 +252,87 @@
 
 **Independent Test**: Create 3 conversations on different topics, navigate between them using sidebar, verify each maintains own context
 
+**Agent Delegation**:
+- Use **backend-specialist** agent with **conversation-history-manager** skill for backend conversation CRUD
+- Use **backend-specialist** agent with **crud-builder** skill for standard CRUD operations
+- Use **frontend-specialist** agent with **chatkit-integrator** skill for conversation list UI
+- Use **frontend-specialist** agent with **frontend-component** skill for custom UI components
+
 ### Implementation for User Story 3
 
 **Backend: Conversation Management**
 
 - [ ] T050 [P] [US3] Implement GET /api/chat/conversations endpoint with cursor pagination in backend/app/routers/chat.py
+  - **Agent**: backend-specialist
+  - **Skill**: conversation-history-manager
+  - **Command**: Implement conversation list endpoint with cursor pagination and user filtering
 - [ ] T051 [P] [US3] Implement PUT /api/chat/conversations/{id} endpoint to update conversation title
+  - **Agent**: backend-specialist
+  - **Skill**: crud-builder
+  - **Command**: Generate update endpoint with ownership validation
 - [ ] T052 [P] [US3] Implement DELETE /api/chat/conversations/{id} endpoint for soft delete (set deleted_at)
+  - **Agent**: backend-specialist
+  - **Skill**: crud-builder
+  - **Command**: Implement soft delete with audit trail
 - [ ] T053 [US3] Add query logic for GET conversations: filter by user_id and deleted_at IS NULL, order by updated_at DESC
+  - **Agent**: backend-specialist
+  - **Skill**: conversation-history-manager
+  - **Command**: Add tenant isolation and soft delete filtering
 - [ ] T054 [US3] Add cursor pagination: if cursor provided, filter updated_at < cursor
+  - **Agent**: backend-specialist
+  - **Skill**: conversation-history-manager
+  - **Command**: Implement cursor-based pagination for scalability
 - [ ] T055 [US3] Calculate message_count and last_message_preview for each conversation in response
+  - **Agent**: backend-specialist
+  - **Skill**: conversation-history-manager
+  - **Command**: Add metadata aggregation with efficient queries
 - [ ] T056 [US3] Auto-generate conversation title from first message (first 50 chars) when creating conversation
+  - **Agent**: backend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Add title auto-generation logic to conversation creation
 
 **Frontend: Conversation List UI**
 
 - [ ] T057 [P] [US3] Implement chatApi.listConversations() with limit and cursor params in frontend/src/lib/api/chat.ts
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Create API client method for conversation listing
 - [ ] T058 [P] [US3] Implement chatApi.updateConversationTitle() in frontend/src/lib/api/chat.ts
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Create API client method for title updates
 - [ ] T059 [P] [US3] Implement chatApi.deleteConversation() in frontend/src/lib/api/chat.ts
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Create API client method for conversation deletion
 - [ ] T060 [US3] Implement adapter.getConversations() in chatkit-config.ts
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Connect Chatkit to conversation list endpoint
 - [ ] T061 [US3] Implement adapter.updateConversationTitle() in chatkit-config.ts
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Connect Chatkit to title update endpoint
 - [ ] T062 [US3] Implement adapter.deleteConversation() in chatkit-config.ts
+  - **Agent**: frontend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Connect Chatkit to deletion endpoint
 - [ ] T063 [US3] Create ConversationList component at frontend/src/components/chat/ConversationList.tsx
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
+  - **Command**: Create conversation sidebar component with list rendering
 - [ ] T064 [US3] Display conversation title, timestamp, and message preview in ConversationList
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
+  - **Command**: Add metadata display with proper formatting
 - [ ] T065 [US3] Add "New Conversation" button that calls createConversation
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
+  - **Command**: Add conversation creation button with click handler
 - [ ] T066 [US3] Add delete icon for each conversation with confirmation dialog
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
+  - **Command**: Add delete action with user confirmation
 
 **Acceptance Criteria Verification**
 
@@ -185,21 +352,50 @@
 
 **Independent Test**: Send "Create a task called 'Review Q4 report'", verify chat shows "AI is using: create_task" and result message
 
+**Agent Delegation**:
+- Use **backend-specialist** agent with **openai-agents-sdk** skill for tool call metadata capture
+- Use **backend-specialist** agent with **mcp-tool-maker** skill for MCP tool integration
+- Use **frontend-specialist** agent with **frontend-component** skill for tool visualization UI
+
 ### Implementation for User Story 4
 
 **Backend: Tool Call Metadata**
 
 - [ ] T072 [US4] Enhance run_agent() to capture tool call metadata: tool_name, arguments, result, timestamp, duration_ms, status
+  - **Agent**: backend-specialist
+  - **Skill**: openai-agents-sdk
+  - **Command**: Add tool execution instrumentation and metadata capture
 - [ ] T073 [US4] Store tool_calls metadata in tool_calls JSONB column when saving assistant message
+  - **Agent**: backend-specialist
+  - **Skill**: chatkit-integrator
+  - **Command**: Persist tool metadata with assistant messages
 - [ ] T074 [US4] Ensure tool_calls is included in MessageResponse schema
+  - **Agent**: backend-specialist
+  - **Skill**: crud-builder
+  - **Command**: Update schema to expose tool_calls field
 
 **Frontend: Tool Call Display**
 
 - [ ] T075 [P] [US4] Create MessageBubble component at frontend/src/components/chat/MessageBubble.tsx
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
+  - **Command**: Create message component with role-based rendering
 - [ ] T076 [US4] Add tool call rendering logic: if message.tool_calls exists, show "AI is using: {tool_name}" indicator
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
+  - **Command**: Add tool call indicator display with conditional rendering
 - [ ] T077 [US4] Display tool results in structured format (e.g., "Created task: Review Q4 report")
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
+  - **Command**: Format tool results with structured display
 - [ ] T078 [US4] Add user-friendly error messages when tool execution fails
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
+  - **Command**: Add error state handling for tool failures
 - [ ] T079 [US4] Style tool call indicators with distinct visual treatment (icon, background color)
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
+  - **Command**: Apply Tailwind CSS styling for tool indicators
 
 **Acceptance Criteria Verification**
 
@@ -216,34 +412,92 @@
 
 **Purpose**: Final touches, error handling, performance optimization, and deployment readiness
 
+**Agent Delegation**:
+- Use **backend-specialist** agent with **fastapi-endpoint-generator** skill for validation and rate limiting
+- Use **database-migration-specialist** agent with **db-migration-wizard** skill for index optimization
+- Use **frontend-specialist** agent with **frontend-component** skill for UX improvements
+- Use **api-integration-specialist** agent with **cors-fixer** skill for CORS configuration
+- Use **lead-engineer** agent for deployment preparation and testing standards
+
 **Security & Error Handling**
 
 - [ ] T084 [P] Add input validation for message content length (max 10,000 chars) in backend
+  - **Agent**: backend-specialist
+  - **Skill**: fastapi-endpoint-generator
+  - **Command**: Add Pydantic field validation with max_length constraint
 - [ ] T085 [P] Add input validation for conversation title length (max 200 chars) in backend
+  - **Agent**: backend-specialist
+  - **Skill**: fastapi-endpoint-generator
+  - **Command**: Add Pydantic field validation for title field
 - [ ] T086 [P] Implement rate limiting for chat endpoints (prevent abuse)
+  - **Agent**: backend-specialist
+  - **Skill**: fastapi-endpoint-generator
+  - **Command**: Add rate limiting middleware with slowapi or custom decorator
 - [ ] T087 [P] Add comprehensive error messages for all failure scenarios (network, auth, validation)
+  - **Agent**: api-integration-specialist
+  - **Skill**: api-schema-sync
+  - **Command**: Standardize error response format across frontend and backend
 
 **Performance Optimization**
 
 - [ ] T088 [P] Add database indexes verification: (user_id, updated_at DESC), (conversation_id, created_at ASC)
+  - **Agent**: database-migration-specialist
+  - **Skill**: db-migration-wizard
+  - **Command**: Create migration with composite indexes for query optimization
 - [ ] T089 [P] Test conversation history load performance with 100 messages (target: <2 seconds)
+  - **Agent**: backend-specialist
+  - **Skill**: integration-tester
+  - **Command**: Create performance test suite for history loading
 - [ ] T090 [P] Test message send latency (target: <5 seconds including AI response)
+  - **Agent**: backend-specialist
+  - **Skill**: integration-tester
+  - **Command**: Create performance test for end-to-end message flow
 - [ ] T091 [P] Optimize polling interval based on conversation activity
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
+  - **Command**: Implement adaptive polling (2s active, 10s idle)
 
 **User Experience**
 
 - [ ] T092 [P] Add loading states for all async operations (creating conversation, sending message)
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
+  - **Command**: Add loading skeletons and spinners with Tailwind CSS
 - [ ] T093 [P] Add character counter when message approaches 10,000 limit
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
+  - **Command**: Add character count display with warning threshold
 - [ ] T094 [P] Add responsive design testing for mobile browsers
+  - **Agent**: frontend-specialist
+  - **Skill**: integration-tester
+  - **Command**: Test responsive breakpoints and mobile interactions
 - [ ] T095 [P] Add keyboard shortcuts (Enter to send, Ctrl+N for new conversation)
+  - **Agent**: frontend-specialist
+  - **Skill**: frontend-component
+  - **Command**: Add keyboard event handlers with modifier key support
 
 **Deployment Preparation**
 
 - [ ] T096 Update backend .env.example with OPENAI_API_KEY, DATABASE_URL
+  - **Agent**: backend-specialist
+  - **Skill**: None (direct file edit)
+  - **Command**: Add environment variable documentation
 - [ ] T097 Update frontend .env.example with NEXT_PUBLIC_API_URL
+  - **Agent**: frontend-specialist
+  - **Skill**: None (direct file edit)
+  - **Command**: Add frontend environment variable documentation
 - [ ] T098 [P] Verify CORS configuration includes production frontend URL
+  - **Agent**: api-integration-specialist
+  - **Skill**: cors-fixer
+  - **Command**: Update CORS middleware with production origins
 - [ ] T099 [P] Create deployment checklist in quickstart.md
+  - **Agent**: lead-engineer
+  - **Skill**: doc-generator
+  - **Command**: Generate deployment checklist with verification steps
 - [ ] T100 Run smoke test: create conversation, send message, verify persistence, check tool execution
+  - **Agent**: lead-engineer
+  - **Skill**: integration-tester
+  - **Command**: Create smoke test suite for critical user flows
 
 **Checkpoint**: Feature complete and production-ready
 
