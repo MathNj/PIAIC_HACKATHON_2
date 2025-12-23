@@ -60,13 +60,15 @@ app = FastAPI(
     lifespan=lifespan
 )
 
-# Configure CORS for frontend communication - Allow all origins
+# Configure CORS for frontend communication
+# Use specific origin from settings for better security
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # Allow all origins (localhost to internet)
-    allow_credentials=False,  # Must be False when allow_origins is ["*"]
+    allow_origins=[settings.FRONTEND_URL],  # Specific frontend origin (supports credentials)
+    allow_credentials=True,  # Enable credentials mode for JWT authentication
     allow_methods=["*"],  # Allow all HTTP methods
     allow_headers=["*"],  # Allow all headers (including Authorization)
+    expose_headers=["*"],  # Allow frontend to read response headers
 )
 
 

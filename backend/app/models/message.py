@@ -6,29 +6,39 @@ Messages are append-only and form the conversation history for stateless agent e
 """
 
 from datetime import datetime
-from typing import Optional, Literal
-from sqlmodel import Field, SQLModel, Index
+from typing import Optional, Literal, Dict, Any
+from uuid import UUID, uuid4
+from sqlmodel import Field, SQLModel, Column
+from sqlalchemy import Enum as SQLEnum, JSON
 from pydantic import ConfigDict
+import enum
+
+
+class MessageRole(str, enum.Enum):
+    """Message role enumeration for type safety"""
+    USER = "user"
+    ASSISTANT = "assistant"
 
 
 class Message(SQLModel, table=True):
     """
     Message model for Phase III AI Chat Agent.
 
-    Represents a single message in a conversation. Can be from user, assistant, or system.
+    Represents a single message in a conversation. Can be from user or assistant.
     Messages are immutable (append-only) to maintain complete conversation audit trail.
 
     Attributes:
-        id: Unique message identifier (auto-incrementing integer)
-        conversation_id: Foreign key to Conversation (int)
-        role: Message role - 'user', 'assistant', or 'system'
+        id: Unique message identifier (UUID)
+        conversation_id: Foreign key to Conversation (UUID)
+        role: Message role - 'user' or 'assistant' (ENUM)
         content: Message text content (required, max 10,000 chars)
-        tool_calls: Optional JSON string of tool executions (for assistant messages)
+        tool_calls: Optional JSONB of tool executions (for assistant messages)
         created_at: Message creation timestamp
 
     Indexes:
         - conversation_id: For efficient conversation message retrieval
         - (conversation_id, created_at): Composite index for ordered queries
+        - tool_calls: GIN index for JSONB queries (PostgreSQL only)
 
     Relations:
         conversation: Many-to-one relationship with Conversation model
@@ -38,7 +48,7 @@ class Message(SQLModel, table=True):
         - Never updated after creation (immutable, append-only)
         - Deleted only via conversation cascade delete
 
-    Tool Calls Format (JSON in tool_calls column):
+    Tool Calls Format (JSONB in tool_calls column):
         [
           {
             "tool": "create_task",
@@ -51,27 +61,26 @@ class Message(SQLModel, table=True):
 
     __tablename__ = "messages"
 
-    # Primary key (auto-incrementing integer)
-    id: Optional[int] = Field(
-        default=None,
+    # Primary key (UUID)
+    id: UUID = Field(
+        default_factory=uuid4,
         primary_key=True,
         nullable=False,
         description="Unique message identifier"
     )
 
     # Foreign key to conversations table
-    conversation_id: int = Field(
+    conversation_id: UUID = Field(
         foreign_key="conversations.id",
         nullable=False,
         index=True,
         description="Conversation this message belongs to"
     )
 
-    # Message metadata
-    role: str = Field(
-        nullable=False,
-        max_length=20,
-        description="Message role: 'user', 'assistant', or 'system'"
+    # Message metadata - using SQLAlchemy Column for ENUM
+    role: MessageRole = Field(
+        sa_column=Column(SQLEnum(MessageRole, name="message_role"), nullable=False),
+        description="Message role: 'user' or 'assistant'"
     )
 
     # Message content
@@ -80,10 +89,11 @@ class Message(SQLModel, table=True):
         description="Message text content (max 10,000 characters)"
     )
 
-    tool_calls: Optional[str] = Field(
+    # Tool calls - using SQLAlchemy Column for JSONB (JSON for SQLite compatibility)
+    tool_calls: Optional[Dict[str, Any]] = Field(
         default=None,
-        nullable=True,
-        description="JSON string of tool executions (for assistant messages)"
+        sa_column=Column(JSON, nullable=True),
+        description="JSONB of tool executions (for assistant messages)"
     )
 
     # Timestamp
@@ -96,20 +106,12 @@ class Message(SQLModel, table=True):
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "id": 456,
-                "conversation_id": 123,
+                "id": "550e8400-e29b-41d4-a716-446655440002",
+                "conversation_id": "550e8400-e29b-41d4-a716-446655440001",
                 "role": "assistant",
                 "content": "I've created a task for you.",
-                "tool_calls": "[{\"tool\":\"create_task\",\"arguments\":{\"title\":\"Buy groceries\"},\"result\":{\"id\":789}}]",
+                "tool_calls": [{"tool": "create_task", "arguments": {"title": "Buy groceries"}, "result": {"id": 789}}],
                 "created_at": "2025-12-07T10:30:00Z"
             }
         }
     )
-
-
-# Create composite index for efficient ordered message queries
-# This is defined outside the class to ensure it's created in migrations
-# Pattern: Query messages WHERE conversation_id = X ORDER BY created_at DESC
-__table_args__ = (
-    Index("idx_messages_conversation_created", "conversation_id", "created_at"),
-)

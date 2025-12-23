@@ -7,7 +7,7 @@ Each conversation belongs to one user and contains multiple messages.
 
 from datetime import datetime
 from typing import Optional
-from uuid import UUID
+from uuid import UUID, uuid4
 from sqlmodel import Field, SQLModel
 from pydantic import ConfigDict
 
@@ -20,15 +20,17 @@ class Conversation(SQLModel, table=True):
     All conversation history is persisted in the database to ensure stateless agent design.
 
     Attributes:
-        id: Unique conversation identifier (auto-incrementing integer)
+        id: Unique conversation identifier (UUID)
         user_id: Foreign key to User (UUID) - owner of the conversation
-        title: Optional conversation title (auto-generated or user-set, max 200 chars)
+        title: Conversation title (required, max 200 chars)
         created_at: Conversation creation timestamp
         updated_at: Last message timestamp (updated on each new message)
+        deleted_at: Soft delete timestamp (null if active)
 
     Indexes:
         - user_id: For efficient filtering by user
-        - updated_at: For sorting by most recent conversations
+        - (user_id, updated_at DESC): For sorting by most recent conversations
+        - (user_id, deleted_at): For filtering soft-deleted conversations
 
     Relations:
         user: Many-to-one relationship with User model
@@ -37,14 +39,14 @@ class Conversation(SQLModel, table=True):
     Lifecycle:
         - Created when user starts new conversation (conversation_id = null in chat API)
         - updated_at refreshed on every new message
-        - Deleted when user explicitly deletes conversation (cascades to messages)
+        - Soft deleted when user explicitly deletes conversation (sets deleted_at)
     """
 
     __tablename__ = "conversations"
 
-    # Primary key (auto-incrementing integer)
-    id: Optional[int] = Field(
-        default=None,
+    # Primary key (UUID)
+    id: UUID = Field(
+        default_factory=uuid4,
         primary_key=True,
         nullable=False,
         description="Unique conversation identifier"
@@ -59,11 +61,10 @@ class Conversation(SQLModel, table=True):
     )
 
     # Conversation metadata
-    title: Optional[str] = Field(
-        default=None,
+    title: str = Field(
         max_length=200,
-        nullable=True,
-        description="Optional conversation title (auto-generated or user-set)"
+        nullable=False,
+        description="Conversation title (auto-generated or user-set)"
     )
 
     # Timestamps
@@ -80,14 +81,21 @@ class Conversation(SQLModel, table=True):
         description="Last message timestamp (UTC) - updated on each message"
     )
 
+    deleted_at: Optional[datetime] = Field(
+        default=None,
+        nullable=True,
+        description="Soft delete timestamp (null if active, UTC when deleted)"
+    )
+
     model_config = ConfigDict(
         json_schema_extra={
             "example": {
-                "id": 123,
+                "id": "550e8400-e29b-41d4-a716-446655440001",
                 "user_id": "550e8400-e29b-41d4-a716-446655440000",
                 "title": "Task Management - Dec 7",
                 "created_at": "2025-12-07T10:00:00Z",
-                "updated_at": "2025-12-07T11:30:00Z"
+                "updated_at": "2025-12-07T11:30:00Z",
+                "deleted_at": None
             }
         }
     )
