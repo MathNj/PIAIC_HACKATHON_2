@@ -22,10 +22,13 @@ interface ToolCall {
   timestamp?: string;
 }
 
+type ChatMode = 'floating' | 'sidebar' | 'embedded';
+
 export default function FloatingChatbot() {
   const { user } = useAuth();
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
+  const [chatMode, setChatMode] = useState<ChatMode>('floating');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,6 +40,20 @@ export default function FloatingChatbot() {
   const [voiceInputLang, setVoiceInputLang] = useState<'en-US' | 'ur-PK' | 'fr-FR' | 'ar-SA'>('en-US');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
+
+  // Load chat mode preference from localStorage
+  useEffect(() => {
+    const savedMode = localStorage.getItem('chatMode') as ChatMode;
+    if (savedMode) {
+      setChatMode(savedMode);
+    }
+  }, []);
+
+  // Save chat mode preference to localStorage
+  const handleModeChange = (mode: ChatMode) => {
+    setChatMode(mode);
+    localStorage.setItem('chatMode', mode);
+  };
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -192,58 +209,135 @@ export default function FloatingChatbot() {
 
   if (!user) return null;
 
-  return (
-    <>
-      {/* Floating Chat Button */}
-      <button
-        onClick={() => setIsOpen(!isOpen)}
-        className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center text-white hover:scale-110 group"
-        aria-label={t('chat.openAssistant')}
-      >
-        {isOpen ? (
-          <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+  // Reusable chat header component
+  const ChatHeader = () => (
+    <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 flex justify-between items-center">
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
+        <h3 className="text-white font-semibold">{t('chat.title')}</h3>
+      </div>
+      <div className="flex gap-2">
+        {/* Mode Toggle Dropdown */}
+        <div className="relative group">
+          <button
+            className="text-white/80 hover:text-white transition-colors p-1"
+            title="Change layout"
+          >
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+          <div className="absolute right-0 top-8 bg-gray-800 rounded-lg shadow-xl border border-gray-700 p-2 hidden group-hover:block min-w-[120px] z-10">
+            <button
+              onClick={() => handleModeChange('floating')}
+              className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                chatMode === 'floating' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              🎈 Floating
+            </button>
+            <button
+              onClick={() => handleModeChange('sidebar')}
+              className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                chatMode === 'sidebar' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              📌 Sidebar
+            </button>
+            <button
+              onClick={() => handleModeChange('embedded')}
+              className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
+                chatMode === 'embedded' ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              📊 Bottom Bar
+            </button>
+          </div>
+        </div>
+        <button
+          onClick={handleNewConversation}
+          className="text-white/80 hover:text-white transition-colors"
+          title={t('chat.newConversation')}
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+          </svg>
+        </button>
+        <button
+          onClick={() => setIsOpen(false)}
+          className="text-white/80 hover:text-white transition-colors"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
-        ) : (
-          <div className="relative">
-            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
-            </svg>
-            {/* Notification badge */}
-            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
-          </div>
-        )}
-      </button>
+        </button>
+      </div>
+    </div>
+  );
 
-      {/* Chat Modal */}
-      {isOpen && (
-        <div className="fixed bottom-24 right-6 z-50 w-96 h-[600px] glass-dark rounded-2xl shadow-2xl border border-white/20 flex flex-col overflow-hidden">
-          {/* Chat Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-4 py-3 flex justify-between items-center">
+  // Get container classes based on mode
+  const getContainerClasses = () => {
+    switch (chatMode) {
+      case 'floating':
+        return 'fixed bottom-24 right-6 z-50 w-96 h-[600px] glass-dark rounded-2xl shadow-2xl border border-white/20 flex flex-col overflow-hidden';
+      case 'sidebar':
+        return 'fixed right-0 top-0 z-50 w-96 h-full glass-dark shadow-2xl border-l border-white/20 flex flex-col overflow-hidden';
+      case 'embedded':
+        return 'fixed bottom-0 left-0 right-0 z-50 h-96 glass-dark border-t border-white/20 flex flex-col overflow-hidden';
+    }
+  };
+
+  return (
+    <>
+      {/* Floating Chat Button (only for floating mode) */}
+      {chatMode === 'floating' && (
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className="fixed bottom-6 right-6 z-50 w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full shadow-2xl hover:shadow-blue-500/50 transition-all duration-300 flex items-center justify-center text-white hover:scale-110 group"
+          aria-label={t('chat.openAssistant')}
+        >
+          {isOpen ? (
+            <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <div className="relative">
+              <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full animate-pulse"></span>
+            </div>
+          )}
+        </button>
+      )}
+
+      {/* Sidebar/Embedded Toggle Button */}
+      {(chatMode === 'sidebar' || chatMode === 'embedded') && (
+        <button
+          onClick={() => setIsOpen(!isOpen)}
+          className={`fixed z-40 bg-gradient-to-r from-blue-600 to-purple-600 text-white shadow-lg hover:shadow-xl transition-all ${
+            chatMode === 'sidebar'
+              ? 'right-0 top-20 rounded-l-lg px-3 py-4'
+              : 'bottom-0 right-6 rounded-t-lg px-4 py-2'
+          }`}
+        >
+          {isOpen ? (
+            chatMode === 'sidebar' ? '→' : '↓'
+          ) : (
             <div className="flex items-center gap-2">
-              <div className="w-3 h-3 bg-green-400 rounded-full animate-pulse"></div>
-              <h3 className="text-white font-semibold">{t('chat.title')}</h3>
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+              </svg>
+              {chatMode === 'embedded' && <span className="text-sm font-medium">Chat</span>}
             </div>
-            <div className="flex gap-2">
-              <button
-                onClick={handleNewConversation}
-                className="text-white/80 hover:text-white transition-colors"
-                title={t('chat.newConversation')}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
-                </svg>
-              </button>
-              <button
-                onClick={() => setIsOpen(false)}
-                className="text-white/80 hover:text-white transition-colors"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </div>
-          </div>
+          )}
+        </button>
+      )}
+
+      {/* Chat Container */}
+      {isOpen && (
+        <div className={getContainerClasses()}>
+          <ChatHeader />
 
           {/* Error Message */}
           {error && (
