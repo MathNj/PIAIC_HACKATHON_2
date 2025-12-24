@@ -34,6 +34,7 @@ export default function FloatingChatbot() {
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
   const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
+  const [voiceInputLang, setVoiceInputLang] = useState<'en-US' | 'ur-PK' | 'fr-FR' | 'ar-SA'>('en-US');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
@@ -49,7 +50,7 @@ export default function FloatingChatbot() {
         recognitionRef.current = new SpeechRecognition();
         recognitionRef.current.continuous = false;
         recognitionRef.current.interimResults = true;
-        recognitionRef.current.lang = 'en-US';
+        recognitionRef.current.lang = voiceInputLang;
 
         recognitionRef.current.onresult = (event: any) => {
           const current = event.resultIndex;
@@ -72,7 +73,7 @@ export default function FloatingChatbot() {
         };
       }
     }
-  }, []);
+  }, [voiceInputLang]); // Re-initialize when language changes
 
   const toggleVoiceRecognition = () => {
     if (!recognitionRef.current) {
@@ -85,8 +86,20 @@ export default function FloatingChatbot() {
       setIsListening(false);
     } else {
       setTranscript("");
+      // Update language before starting (in case it changed)
+      recognitionRef.current.lang = voiceInputLang;
       recognitionRef.current.start();
       setIsListening(true);
+    }
+  };
+
+  const getVoiceLanguageLabel = (lang: string) => {
+    switch (lang) {
+      case 'en-US': return '🇺🇸 EN';
+      case 'ur-PK': return '🇵🇰 اردو';
+      case 'fr-FR': return '🇫🇷 FR';
+      case 'ar-SA': return '🇸🇦 العربية';
+      default: return lang;
     }
   };
 
@@ -342,37 +355,56 @@ export default function FloatingChatbot() {
 
           {/* Input Area */}
           <form onSubmit={handleSubmit} className="p-4 bg-gray-800/50 border-t border-white/10">
-            <div className="flex gap-2">
-              <button
-                type="button"
-                onClick={toggleVoiceRecognition}
-                className={`p-2 rounded-lg transition-all ${
-                  isListening
-                    ? 'bg-red-500 hover:bg-red-600 animate-pulse'
-                    : 'bg-blue-600 hover:bg-blue-700'
-                } text-white flex-shrink-0`}
-                title={isListening ? t('voice.stopVoiceInput') : t('voice.startVoiceInput')}
-                disabled={loading}
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
-                </svg>
-              </button>
-              <input
-                type="text"
-                value={input}
-                onChange={e => setInput(e.target.value)}
-                placeholder={t('chat.placeholder')}
-                disabled={loading}
-                className="flex-1 px-3 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
-              />
-              <button
-                type="submit"
-                disabled={loading || !input.trim()}
-                className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg text-sm font-medium hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-              >
-                {t('chat.send')}
-              </button>
+            <div className="flex flex-col gap-2">
+              {/* Voice Controls Row */}
+              <div className="flex gap-2 items-center">
+                <select
+                  value={voiceInputLang}
+                  onChange={(e) => setVoiceInputLang(e.target.value as 'en-US' | 'ur-PK' | 'fr-FR' | 'ar-SA')}
+                  className="px-2 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 w-20"
+                  disabled={loading || isListening}
+                  title="Select voice input language"
+                >
+                  <option value="en-US">🇺🇸 EN</option>
+                  <option value="ur-PK">🇵🇰 اردو</option>
+                  <option value="fr-FR">🇫🇷 FR</option>
+                  <option value="ar-SA">🇸🇦 AR</option>
+                </select>
+                <button
+                  type="button"
+                  onClick={toggleVoiceRecognition}
+                  className={`p-2 rounded-lg transition-all ${
+                    isListening
+                      ? 'bg-red-500 hover:bg-red-600 animate-pulse'
+                      : 'bg-blue-600 hover:bg-blue-700'
+                  } text-white flex-shrink-0`}
+                  title={isListening ? t('voice.stopVoiceInput') : t('voice.startVoiceInput')}
+                  disabled={loading}
+                >
+                  <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z" />
+                  </svg>
+                </button>
+              </div>
+
+              {/* Text Input Row */}
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={e => setInput(e.target.value)}
+                  placeholder={t('chat.placeholder')}
+                  disabled={loading}
+                  className="flex-1 px-3 py-2 bg-gray-900/50 border border-gray-700 rounded-lg text-white text-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+                />
+                <button
+                  type="submit"
+                  disabled={loading || !input.trim()}
+                  className="px-4 py-2 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg text-sm font-medium hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                >
+                  {t('chat.send')}
+                </button>
+              </div>
             </div>
           </form>
         </div>
