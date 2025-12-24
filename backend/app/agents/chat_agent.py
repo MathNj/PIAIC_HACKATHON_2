@@ -34,12 +34,99 @@ logger = logging.getLogger(__name__)
 
 
 # ============================================================================
+# Helper: Convert FastMCP TextContent to serializable dict
+# ============================================================================
+
+def convert_textcontent_to_dict(result: Any) -> Any:
+    """
+    Convert FastMCP TextContent object to JSON-serializable dict/list/str.
+
+    FastMCP's call_tool returns TextContent objects with structure:
+    TextContent(type="text", text='{"key": "value"}')
+
+    This function extracts the .text attribute and parses it as JSON.
+
+    Args:
+        result: Result from execute_mcp_tool (could be TextContent or dict)
+
+    Returns:
+        Parsed JSON data (dict/list/str) that's JSON-serializable
+    """
+    # Handle None
+    if result is None:
+        logger.warning(f"[TextContent Converter] Received None, returning empty dict")
+        return {}
+
+    # Log what we received for debugging
+    result_type = type(result).__name__
+    logger.info(f"[TextContent Converter] Received type: {result_type}")
+
+    # AGGRESSIVE: Check for TextContent by type name OR by having .text attribute
+    is_textcontent = result_type == 'TextContent' or (hasattr(result, 'text') and hasattr(result, 'type'))
+
+    if is_textcontent:
+        logger.info(f"[TextContent Converter] Detected TextContent object")
+        try:
+            # Extract text content from TextContent object
+            text_content = result.text if hasattr(result, 'text') else str(result)
+            logger.info(f"[TextContent Converter] Extracted text (first 500 chars): {str(text_content)[:500]}")
+
+            # Try to parse as JSON
+            try:
+                parsed = json.loads(text_content)
+                parsed_type = type(parsed).__name__
+                logger.info(f"[TextContent Converter] ✓ Successfully parsed as {parsed_type}")
+                return parsed
+            except json.JSONDecodeError as e:
+                logger.warning(f"[TextContent Converter] Not JSON, returning as plain text: {e}")
+                # If not valid JSON, return the text as-is (it's a string)
+                return text_content
+        except Exception as e:
+            logger.error(f"[TextContent Converter] ✗ Extraction failed: {e}", exc_info=True)
+            # Last resort: force to string
+            try:
+                return str(result.text) if hasattr(result, 'text') else str(result)
+            except:
+                return {"error": "TextContent conversion failed completely"}
+
+    # If it's a list, convert each item
+    if isinstance(result, list):
+        logger.info(f"[TextContent Converter] Converting list with {len(result)} items")
+        return [convert_textcontent_to_dict(item) for item in result]
+
+    # If it's a dict, return as-is (already serializable)
+    if isinstance(result, dict):
+        logger.info(f"[TextContent Converter] Already a dict, returning as-is")
+        return result
+
+    # If it's a primitive (str, int, float, bool), return as-is
+    if isinstance(result, (str, int, float, bool)):
+        logger.info(f"[TextContent Converter] Primitive type ({result_type}), returning as-is")
+        return result
+
+    # Unknown type - try to make it serializable
+    logger.warning(f"[TextContent Converter] Unknown type {result_type}, attempting conversion")
+    if hasattr(result, 'model_dump'):
+        logger.info(f"[TextContent Converter] Has model_dump, using it")
+        return result.model_dump()
+    elif hasattr(result, '__dict__'):
+        logger.info(f"[TextContent Converter] Has __dict__, using it")
+        return result.__dict__
+    else:
+        logger.warning(f"[TextContent Converter] Converting to string as last resort")
+        return str(result)
+
+
+# ============================================================================
 # OpenAI Client and JWT Token Generation
 # ============================================================================
 
 def get_openai_client() -> OpenAI:
     """
-    Get OpenAI client instance.
+    Get OpenAI-compatible client instance (supports OpenAI, Groq, etc.).
+
+    Supports custom base URLs via OPENAI_BASE_URL environment variable.
+    This allows using Groq or other OpenAI-compatible APIs.
 
     Raises:
         ValueError: If OPENAI_API_KEY environment variable is not set
@@ -49,7 +136,14 @@ def get_openai_client() -> OpenAI:
         raise ValueError(
             "OPENAI_API_KEY environment variable is required for AI agent"
         )
-    return OpenAI(api_key=api_key)
+
+    base_url = os.getenv("OPENAI_BASE_URL")
+
+    if base_url:
+        logger.info(f"Using custom OpenAI base URL: {base_url}")
+        return OpenAI(api_key=api_key, base_url=base_url)
+    else:
+        return OpenAI(api_key=api_key)
 
 
 def _generate_jwt_token(user_id: UUID) -> str:
@@ -177,13 +271,16 @@ def _convert_mcp_tools_to_openai_format() -> List[Dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "mcp_update_task",
-                "description": "Update an existing task's properties (title, description, priority, due_date, completed status)",
+                "description": "Update an existing task's properties (title, description, priority, due_date, completed status). IMPORTANT: You must first call mcp_list_tasks to get the task's numeric ID before calling this function.",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "task_id": {
-                            "type": "integer",
-                            "description": "ID of the task to update"
+                            "description": "REQUIRED: Numeric ID of the task to update (get this from mcp_list_tasks first, e.g., 102)",
+                            "anyOf": [
+                                {"type": "integer"},
+                                {"type": "string", "pattern": "^[0-9]+$"}
+                            ]
                         },
                         "title": {
                             "type": "string",
@@ -215,13 +312,16 @@ def _convert_mcp_tools_to_openai_format() -> List[Dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "mcp_delete_task",
-                "description": "Permanently delete a task by ID",
+                "description": "Permanently delete a task by ID. IMPORTANT: You must first call mcp_list_tasks to get the task's numeric ID before calling this function.",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "task_id": {
-                            "type": "integer",
-                            "description": "ID of the task to delete"
+                            "description": "REQUIRED: Numeric ID of the task to delete (get this from mcp_list_tasks first, e.g., 102)",
+                            "anyOf": [
+                                {"type": "integer"},
+                                {"type": "string", "pattern": "^[0-9]+$"}
+                            ]
                         }
                     },
                     "required": ["task_id"]
@@ -232,13 +332,16 @@ def _convert_mcp_tools_to_openai_format() -> List[Dict[str, Any]]:
             "type": "function",
             "function": {
                 "name": "mcp_toggle_task_completion",
-                "description": "Toggle task completion status (mark as complete if pending, or pending if complete)",
+                "description": "Toggle task completion status (mark as complete if pending, or pending if complete). IMPORTANT: You must first call mcp_list_tasks to get the task's numeric ID before calling this function.",
                 "parameters": {
                     "type": "object",
                     "properties": {
                         "task_id": {
-                            "type": "integer",
-                            "description": "ID of the task to toggle"
+                            "description": "REQUIRED: Numeric ID of the task to toggle (get this from mcp_list_tasks first, e.g., 79)",
+                            "anyOf": [
+                                {"type": "integer"},
+                                {"type": "string", "pattern": "^[0-9]+$"}
+                            ]
                         }
                     },
                     "required": ["task_id"]
@@ -288,7 +391,7 @@ async def run_agent(
     history: List[Dict[str, str]],
     mcp_tools: Optional[List[Dict[str, Any]]] = None,
     max_tool_calls: int = 10,
-    model: str = "gpt-4",
+    model: str = None,
     system_prompt: Optional[str] = None
 ) -> Dict[str, Any]:
     """
@@ -342,6 +445,10 @@ async def run_agent(
     """
     start_time = time.time()
 
+    # Use model from environment variable if not provided
+    if model is None:
+        model = os.getenv("OPENAI_MODEL", "gpt-4")
+
     logger.info(
         f"Agent execution started with MCP tools",
         extra={
@@ -376,10 +483,30 @@ async def run_agent(
         default_system_prompt = (
             "You are a helpful AI assistant for a task management application. "
             "You have access to tools that let you create, update, list, delete, and manage tasks. "
+            "\n\n🌍 MULTILINGUAL REQUIREMENT:\n"
+            "You are a POLYGLOT assistant supporting English, Urdu (اردو), French (Français), and Arabic (العربية).\n"
+            "- ALWAYS detect the language of the user's message\n"
+            "- ALWAYS respond in the SAME language the user used\n"
+            "- If user writes in Urdu, respond in Urdu. If French, respond in French. If Arabic, respond in Arabic.\n"
+            "- NEVER reply in English if the user asks in another language (unless they explicitly request English)\n"
+            "- Maintain the same language throughout the conversation unless the user switches\n"
+            "\n\nCRITICAL: Task IDs are INTEGERS, not strings!\n"
+            "\nWORKFLOW EXAMPLES:\n"
+            "User: 'Delete the test task'\n"
+            "1. Call mcp_list_tasks() → Get [{\"id\": 102, \"title\": \"test\"}, ...]\n"
+            "2. Call mcp_delete_task(task_id=102) ← Use the numeric ID 102\n"
+            "\n"
+            "User: 'Edit my shopping task'\n"
+            "1. Call mcp_list_tasks() → Get [{\"id\": 85, \"title\": \"shopping\"}, ...]\n"
+            "2. Call mcp_update_task(task_id=85, title=\"new title\") ← Use the numeric ID 85\n"
+            "\n"
+            "User: 'میری خریداری کی فہرست دکھائیں' (Urdu: Show my shopping list)\n"
+            "1. Call mcp_list_tasks() → Get tasks\n"
+            "2. Respond: 'یہاں آپ کے کام ہیں...' (Here are your tasks...)\n"
+            "\n"
             "When users ask to create tasks, use the mcp_create_task tool with natural language support "
             "(e.g., 'tomorrow' for due dates, 'URGENT' in description sets high priority). "
-            "Be concise, friendly, and proactive in offering assistance. "
-            "Always confirm task operations with the user by describing what you did."
+            "Be concise, friendly, and proactive. Always confirm operations."
         )
         messages.append({
             "role": "system",
@@ -399,6 +526,7 @@ async def run_agent(
     tool_calls_audit = []
     total_tokens = 0
     iteration = 0
+    executed_tools = set()  # Track executed tool signatures to prevent duplicates across iterations
 
     # Agent execution loop (for multi-turn tool calling)
     while iteration < max_tool_calls:
@@ -450,8 +578,54 @@ async def run_agent(
 
             # Tool calls present - execute them
             logger.info(
-                f"Agent requested {len(assistant_message.tool_calls)} tool calls"
+                f"Agent requested {len(assistant_message.tool_calls)} tool calls in iteration {iteration}"
             )
+
+            # Log each tool call for debugging
+            for idx, tc in enumerate(assistant_message.tool_calls):
+                try:
+                    args_dict = json.loads(tc.function.arguments)
+                    logger.info(
+                        f"[Iteration {iteration}] Tool call #{idx + 1}: {tc.function.name}({args_dict})"
+                    )
+                except:
+                    logger.info(
+                        f"[Iteration {iteration}] Tool call #{idx + 1}: {tc.function.name} (args: {tc.function.arguments[:100]})"
+                    )
+
+            # BUGFIX: Deduplicate tool calls (Groq Llama sometimes makes duplicate calls)
+            # 1. Remove duplicates within this response
+            # 2. Remove duplicates across all iterations (prevent re-executing same tool)
+            unique_tool_calls = []
+            seen_calls = set()
+            skipped_already_executed = 0
+
+            for tc in assistant_message.tool_calls:
+                call_signature = (tc.function.name, tc.function.arguments)
+
+                # Skip if already executed in a previous iteration
+                if call_signature in executed_tools:
+                    skipped_already_executed += 1
+                    logger.warning(
+                        f"Skipping duplicate tool call (already executed): {tc.function.name}"
+                    )
+                    continue
+
+                # Skip if duplicate within this response
+                if call_signature not in seen_calls:
+                    unique_tool_calls.append(tc)
+                    seen_calls.add(call_signature)
+                    executed_tools.add(call_signature)  # Mark as executed
+
+            if len(unique_tool_calls) < len(assistant_message.tool_calls):
+                logger.warning(
+                    f"Deduplicated tool calls: {len(assistant_message.tool_calls)} → {len(unique_tool_calls)} (skipped {skipped_already_executed} already executed)"
+                )
+
+            # If all tool calls were duplicates, break the loop to prevent infinite iteration
+            if len(unique_tool_calls) == 0:
+                logger.warning("All tool calls were duplicates - stopping agent loop")
+                break
 
             # Add assistant message with tool calls to conversation
             messages.append({
@@ -466,12 +640,12 @@ async def run_agent(
                             "arguments": tc.function.arguments
                         }
                     }
-                    for tc in assistant_message.tool_calls
+                    for tc in unique_tool_calls  # Use deduplicated calls
                 ]
             })
 
-            # Execute each tool call
-            for tool_call in assistant_message.tool_calls:
+            # Execute each tool call (deduplicated)
+            for tool_call in unique_tool_calls:
                 tool_start = time.time()
                 tool_name = tool_call.function.name
                 tool_arguments_str = tool_call.function.arguments
@@ -486,16 +660,44 @@ async def run_agent(
                     )
 
                     # Execute MCP tool via FastMCP SDK (with injected JWT token)
-                    tool_result = await _execute_tool(
+                    raw_result = await _execute_tool(
                         tool_name=tool_name,
                         arguments=tool_arguments,
                         user_token=user_token  # Inject JWT token for authentication
                     )
 
+                    # BUGFIX: Convert TextContent to JSON-serializable dict/list
+                    # FastMCP returns TextContent objects that aren't directly serializable
+                    tool_result = convert_textcontent_to_dict(raw_result)
+
+                    # AGGRESSIVE FAILSAFE: If still TextContent, extract text manually
+                    if type(tool_result).__name__ == 'TextContent':
+                        logger.error(f"Conversion failed! Still TextContent after convert_textcontent_to_dict")
+                        try:
+                            tool_result = json.loads(tool_result.text)
+                            logger.info(f"Manually extracted text from TextContent")
+                        except:
+                            tool_result = {"text": str(tool_result.text)}
+                            logger.error(f"Manual extraction also failed, wrapped in dict")
+
                     tool_status = "success"
 
+                    logger.info(
+                        f"✓ Tool executed successfully: {tool_name}",
+                        extra={
+                            "result_type": type(tool_result).__name__,
+                            "result_preview": str(tool_result)[:200] if tool_result else None
+                        }
+                    )
+
                 except json.JSONDecodeError as e:
-                    logger.error(f"Tool arguments JSON decode failed: {e}")
+                    logger.error(
+                        f"✗ Tool arguments JSON decode failed: {tool_name}",
+                        extra={
+                            "error": str(e),
+                            "arguments_str": tool_arguments_str[:200]
+                        }
+                    )
                     tool_result = {
                         "error": "Invalid tool arguments format",
                         "details": str(e)
@@ -503,7 +705,14 @@ async def run_agent(
                     tool_status = "error"
 
                 except Exception as e:
-                    logger.error(f"Tool execution failed: {e}")
+                    logger.error(
+                        f"✗ Tool execution failed: {tool_name}",
+                        exc_info=True,
+                        extra={
+                            "error": str(e),
+                            "arguments": tool_arguments if 'tool_arguments' in locals() else "N/A"
+                        }
+                    )
                     tool_result = {
                         "error": "Tool execution failed",
                         "details": str(e)
@@ -588,6 +797,20 @@ async def _execute_tool(
             "arguments": arguments
         }
     )
+
+    # BUGFIX: Handle None arguments (some tools like list_tasks have no required params)
+    if arguments is None:
+        arguments = {}
+
+    # BUGFIX: Convert string task_id to integer (Groq Llama sometimes passes strings)
+    # This handles cases where the LLM passes "102" instead of 102
+    if "task_id" in arguments and isinstance(arguments["task_id"], str):
+        try:
+            arguments["task_id"] = int(arguments["task_id"])
+            logger.info(f"Converted string task_id to integer: {arguments['task_id']}")
+        except ValueError:
+            logger.error(f"Invalid task_id string: {arguments['task_id']}")
+            raise ValueError(f"task_id must be a numeric value, got: {arguments['task_id']}")
 
     # Inject user_token into arguments (required by all MCP tools)
     # This ensures JWT authentication for tenant isolation

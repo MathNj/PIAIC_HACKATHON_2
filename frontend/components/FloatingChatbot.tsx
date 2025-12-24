@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
+import { detectLanguage } from "@/lib/languageDetection";
 
 interface Message {
   id: string;
@@ -29,9 +30,10 @@ export default function FloatingChatbot() {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [conversationId, setConversationId] = useState<number | null>(null);
+  const [conversationId, setConversationId] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [transcript, setTranscript] = useState("");
+  const [speakingMessageId, setSpeakingMessageId] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
@@ -88,6 +90,38 @@ export default function FloatingChatbot() {
     }
   };
 
+  const speakMessage = (text: string, messageId: string) => {
+    // Stop any ongoing speech
+    window.speechSynthesis.cancel();
+
+    // Check if already speaking this message
+    if (speakingMessageId === messageId) {
+      setSpeakingMessageId(null);
+      return;
+    }
+
+    // Use browser Text-to-Speech
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.rate = 1.0;
+    utterance.pitch = 1.0;
+    utterance.volume = 1.0;
+
+    utterance.onstart = () => {
+      setSpeakingMessageId(messageId);
+    };
+
+    utterance.onend = () => {
+      setSpeakingMessageId(null);
+    };
+
+    utterance.onerror = () => {
+      setSpeakingMessageId(null);
+      console.error('Speech synthesis error');
+    };
+
+    window.speechSynthesis.speak(utterance);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!user || !input.trim() || loading) return;
@@ -104,14 +138,27 @@ export default function FloatingChatbot() {
     setError(null);
 
     try {
-      const response = await api.post(`/api/${user.id}/chat`, {
-        conversation_id: conversationId,
-        message: userMessage.content,
+      // Create conversation if it doesn't exist
+      let currentConversationId = conversationId;
+      if (!currentConversationId) {
+        const convResponse = await api.post('/api/chat/conversations', {
+          title: 'Quick Chat'
+        });
+        currentConversationId = convResponse.id;
+        setConversationId(currentConversationId);
+      }
+
+      // Send message to conversation
+      const response = await api.post(`/api/chat/conversations/${currentConversationId}/messages`, {
+        content: userMessage.content,
       });
-      setConversationId(response.conversation_id);
+
       const assistantMessage: Message = {
-        id: `assistant-${response.message.id}`,
-        ...response.message
+        id: response.id,
+        role: response.role,
+        content: response.content,
+        tool_calls: response.tool_calls?.tool_calls,
+        created_at: response.created_at
       };
       setMessages(prev => [...prev, assistantMessage]);
     } catch (err) {
@@ -203,29 +250,69 @@ export default function FloatingChatbot() {
               </div>
             ) : (
               <>
-                {messages.map(msg => (
-                  <div key={msg.id} className={`flex gap-2 ${msg.role === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`text-2xl ${msg.role === 'user' ? 'order-2' : 'order-1'}`}>
-                      {msg.role === 'user' ? '👤' : '🤖'}
-                    </div>
-                    <div className={`max-w-[80%] rounded-2xl px-4 py-2 ${
-                      msg.role === 'user'
-                        ? 'order-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white'
-                        : 'order-2 bg-gray-700/50 text-gray-200'
-                    }`}>
-                      <p className="text-sm whitespace-pre-wrap">{msg.content}</p>
-                      {msg.tool_calls && msg.tool_calls.length > 0 && (
-                        <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
-                          {msg.tool_calls.map((call, idx) => (
-                            <div key={idx} className="text-xs opacity-80">
-                              🔧 {call.tool}
-                            </div>
-                          ))}
+                {messages.map(msg => {
+                  // Detect language and get styling info
+                  const langInfo = detectLanguage(msg.content);
+                  const isRTL = langInfo.direction === 'rtl';
+                  const isUser = msg.role === 'user';
+
+                  return (
+                    <div
+                      key={msg.id}
+                      className={`flex gap-2 ${isUser ? 'justify-end' : 'justify-start'}`}
+                    >
+                      <div className={`text-2xl ${isUser ? 'order-2' : 'order-1'}`}>
+                        {isUser ? '👤' : '🤖'}
+                      </div>
+                      <div
+                        className={`max-w-[80%] rounded-2xl px-4 py-2 ${
+                          isUser
+                            ? 'order-1 bg-gradient-to-r from-blue-600 to-purple-600 text-white'
+                            : 'order-2 bg-gray-700/50 text-gray-200'
+                        }`}
+                        dir={langInfo.direction}
+                        style={{
+                          fontFamily: langInfo.fontFamily,
+                          textAlign: isRTL ? 'right' : 'left'
+                        }}
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <p className="text-sm whitespace-pre-wrap flex-1">{msg.content}</p>
+                          {msg.role === 'assistant' && (
+                            <button
+                              onClick={() => speakMessage(msg.content, msg.id)}
+                              className={`flex-shrink-0 p-1 rounded transition-colors ${
+                                speakingMessageId === msg.id
+                                  ? 'bg-blue-500/30 text-blue-300'
+                                  : 'text-gray-400 hover:text-blue-400 hover:bg-gray-600/50'
+                              }`}
+                              title={speakingMessageId === msg.id ? "Stop speaking" : "Speak message"}
+                            >
+                              {speakingMessageId === msg.id ? (
+                                <svg className="w-4 h-4 animate-pulse" fill="currentColor" viewBox="0 0 24 24">
+                                  <path d="M6 4h4v16H6V4zm8 0h4v16h-4V4z"/>
+                                </svg>
+                              ) : (
+                                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.536 8.464a5 5 0 010 7.072m2.828-9.9a9 9 0 010 12.728M5.586 15.536a5 5 0 010-7.072m2.828 0a1 1 0 011.414 0 5 5 0 000 7.072 1 1 0 01-1.414 0z" />
+                                </svg>
+                              )}
+                            </button>
+                          )}
                         </div>
-                      )}
+                        {msg.tool_calls && msg.tool_calls.length > 0 && (
+                          <div className="mt-2 pt-2 border-t border-white/10 space-y-1">
+                            {msg.tool_calls.map((call, idx) => (
+                              <div key={idx} className="text-xs opacity-80">
+                                🔧 {call.tool}
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
                 {loading && (
                   <div className="flex justify-start">
                     <div className="bg-gray-700/50 rounded-2xl px-4 py-2 flex items-center gap-2">
