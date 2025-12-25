@@ -22,6 +22,16 @@ interface ToolCall {
   timestamp?: string;
 }
 
+interface ConversationListItem {
+  id: string;
+  user_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+  last_message_preview: string | null;
+}
+
 type ChatMode = 'floating' | 'sidebar' | 'embedded';
 
 export default function FloatingChatbot() {
@@ -29,6 +39,9 @@ export default function FloatingChatbot() {
   const { t } = useLanguage();
   const [isOpen, setIsOpen] = useState(false);
   const [chatMode, setChatMode] = useState<ChatMode>('floating');
+  const [showHistory, setShowHistory] = useState(false);
+  const [conversations, setConversations] = useState<ConversationListItem[]>([]);
+  const [loadingConversations, setLoadingConversations] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -199,13 +212,54 @@ export default function FloatingChatbot() {
     }
   };
 
+  const fetchConversations = async () => {
+    if (!user) return;
+
+    setLoadingConversations(true);
+    try {
+      const response = await api.get('/api/chat/conversations', {
+        params: { limit: 20 }
+      });
+      setConversations(response.conversations || []);
+    } catch (err) {
+      console.error('Failed to fetch conversations:', err);
+    } finally {
+      setLoadingConversations(false);
+    }
+  };
+
+  const loadConversation = async (convId: string) => {
+    if (!user) return;
+
+    setLoading(true);
+    setError(null);
+    try {
+      const response = await api.get(`/api/chat/conversations/${convId}/messages`);
+      setMessages(response.messages || []);
+      setConversationId(convId);
+      setShowHistory(false); // Close history panel after loading
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load conversation");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleNewConversation = () => {
     if (messages.length > 0 && confirm(t('chat.startNewConversation'))) {
       setMessages([]);
       setConversationId(null);
       setError(null);
+      setShowHistory(false);
     }
   };
+
+  // Fetch conversations when history panel is opened
+  useEffect(() => {
+    if (showHistory && conversations.length === 0) {
+      fetchConversations();
+    }
+  }, [showHistory]);
 
   if (!user) return null;
 
@@ -255,6 +309,15 @@ export default function FloatingChatbot() {
           </div>
         </div>
         <button
+          onClick={() => setShowHistory(!showHistory)}
+          className={`transition-colors ${showHistory ? 'text-white' : 'text-white/80 hover:text-white'}`}
+          title="Conversation History"
+        >
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </button>
+        <button
           onClick={handleNewConversation}
           className="text-white/80 hover:text-white transition-colors"
           title={t('chat.newConversation')}
@@ -279,11 +342,11 @@ export default function FloatingChatbot() {
   const getContainerClasses = () => {
     switch (chatMode) {
       case 'floating':
-        return 'fixed bottom-24 right-6 z-50 w-96 h-[600px] glass-dark rounded-2xl shadow-2xl border border-white/20 flex flex-col overflow-hidden';
+        return 'fixed bottom-24 right-6 z-50 w-96 h-[600px] glass-dark rounded-2xl shadow-2xl border border-white/20 flex flex-col overflow-hidden relative';
       case 'sidebar':
-        return 'fixed right-0 top-0 z-50 w-96 h-full glass-dark shadow-2xl border-l border-white/20 flex flex-col overflow-hidden';
+        return 'fixed right-0 top-0 z-50 w-96 h-full glass-dark shadow-2xl border-l border-white/20 flex flex-col overflow-hidden relative';
       case 'embedded':
-        return 'fixed bottom-0 left-0 right-0 z-50 h-96 glass-dark border-t border-white/20 flex flex-col overflow-hidden';
+        return 'fixed bottom-0 left-0 right-0 z-50 h-96 glass-dark border-t border-white/20 flex flex-col overflow-hidden relative';
     }
   };
 
@@ -338,6 +401,68 @@ export default function FloatingChatbot() {
       {isOpen && (
         <div className={getContainerClasses()}>
           <ChatHeader />
+
+          {/* Conversation History Panel */}
+          {showHistory && (
+            <div className="absolute inset-0 bg-gray-900/95 z-10 flex flex-col">
+              <div className="p-4 border-b border-gray-700 flex justify-between items-center">
+                <h3 className="text-white font-semibold">Conversation History</h3>
+                <div className="flex gap-2">
+                  <button
+                    onClick={fetchConversations}
+                    className="text-gray-400 hover:text-white transition-colors"
+                    title="Refresh"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+                    </svg>
+                  </button>
+                  <button
+                    onClick={() => setShowHistory(false)}
+                    className="text-gray-400 hover:text-white transition-colors"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                  </button>
+                </div>
+              </div>
+              <div className="flex-1 overflow-y-auto p-4">
+                {loadingConversations ? (
+                  <div className="text-center py-8 text-gray-400">Loading conversations...</div>
+                ) : conversations.length === 0 ? (
+                  <div className="text-center py-8 text-gray-400">No conversations yet</div>
+                ) : (
+                  <div className="space-y-2">
+                    {conversations.map(conv => (
+                      <button
+                        key={conv.id}
+                        onClick={() => loadConversation(conv.id)}
+                        className={`w-full text-left p-3 rounded-lg transition-colors ${
+                          conversationId === conv.id
+                            ? 'bg-blue-600 text-white'
+                            : 'bg-gray-800 hover:bg-gray-700 text-gray-200'
+                        }`}
+                      >
+                        <div className="flex justify-between items-start mb-1">
+                          <h4 className="font-medium text-sm">{conv.title}</h4>
+                          <span className="text-xs opacity-70">
+                            {new Date(conv.updated_at).toLocaleDateString()}
+                          </span>
+                        </div>
+                        {conv.last_message_preview && (
+                          <p className="text-xs opacity-80 truncate">{conv.last_message_preview}</p>
+                        )}
+                        <div className="flex items-center gap-2 mt-1">
+                          <span className="text-xs opacity-60">{conv.message_count} messages</span>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
 
           {/* Error Message */}
           {error && (
