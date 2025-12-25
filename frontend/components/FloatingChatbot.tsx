@@ -155,7 +155,7 @@ export default function FloatingChatbot() {
     }
   };
 
-  const speakMessage = (text: string, messageId: string) => {
+  const speakMessage = async (text: string, messageId: string) => {
     // Stop any ongoing speech
     window.speechSynthesis.cancel();
 
@@ -165,78 +165,106 @@ export default function FloatingChatbot() {
       return;
     }
 
-    // Check for mixed-language content
-    const mixedLangInfo = isMixedLanguage(text);
-
     // Detect primary language of the text
     const langInfo = detectLanguage(text);
+
+    // Check for mixed-language content
+    const mixedLangInfo = isMixedLanguage(text);
 
     // Warn user about mixed-language limitations
     if (mixedLangInfo.isMixed) {
       console.warn('Mixed-language content detected:', mixedLangInfo.scripts);
       console.log('Primary language detected:', langInfo.code, langInfo.name);
-      console.log('Note: Text-to-speech may only pronounce parts of mixed-language text correctly.');
     }
 
-    // Map language codes to speech synthesis language codes
-    const langMap: Record<string, string[]> = {
-      ur: ['ur-PK', 'ur-IN', 'ur'],
-      ar: ['ar-SA', 'ar-AE', 'ar-EG', 'ar'],
-      fr: ['fr-FR', 'fr-CA', 'fr'],
-      en: ['en-US', 'en-GB', 'en-AU', 'en']
-    };
+    // Use backend multilingual TTS for non-English languages
+    if (langInfo.code !== 'en') {
+      console.log(`🎙️ Using backend Google TTS for ${langInfo.name}`);
 
-    // Get available voices
-    const voices = window.speechSynthesis.getVoices();
+      try {
+        setSpeakingMessageId(messageId);
 
-    // Find a voice that matches the detected language
-    const preferredLangs = langMap[langInfo.code] || ['en-US'];
-    let selectedVoice = null;
+        // Get JWT token
+        const token = localStorage.getItem('token');
+        const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
-    for (const lang of preferredLangs) {
-      selectedVoice = voices.find(voice => voice.lang.startsWith(lang));
-      if (selectedVoice) break;
-    }
+        // Call backend multilingual TTS endpoint
+        const response = await fetch(`${API_BASE_URL}/api/voice/multilingual`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${token}`
+          },
+          body: JSON.stringify({
+            text: text,
+            lang: langInfo.code,
+            slow: false
+          })
+        });
 
-    // If no voice found for the language, fall back to English voice
-    if (!selectedVoice && langInfo.code !== 'en') {
-      console.warn(`No voice available for ${langInfo.name}. Available voices:`, voices.map(v => v.lang));
-      console.warn(`Falling back to English voice. Install ${langInfo.name} language pack in Windows Settings for proper pronunciation.`);
+        if (!response.ok) {
+          throw new Error(`TTS API error: ${response.status} ${response.statusText}`);
+        }
 
-      // Try to find an English voice as fallback
-      const englishVoice = voices.find(voice =>
-        voice.lang.startsWith('en-US') ||
-        voice.lang.startsWith('en-GB') ||
-        voice.lang.startsWith('en')
-      );
+        // Get audio blob from response
+        const audioBlob = await response.blob();
+        const audioUrl = URL.createObjectURL(audioBlob);
+        const audio = new Audio(audioUrl);
 
-      if (englishVoice) {
-        selectedVoice = englishVoice;
-        console.log(`Using fallback voice: ${englishVoice.name} (${englishVoice.lang})`);
+        audio.onplay = () => {
+          console.log(`✅ Playing ${langInfo.name} audio from backend Google TTS`);
+        };
+
+        audio.onended = () => {
+          setSpeakingMessageId(null);
+          URL.revokeObjectURL(audioUrl);  // Clean up
+          console.log('✅ Audio playback finished');
+        };
+
+        audio.onerror = (error) => {
+          setSpeakingMessageId(null);
+          URL.revokeObjectURL(audioUrl);
+          console.error('Audio playback error:', error);
+        };
+
+        await audio.play();
+
+      } catch (err) {
+        console.error('Backend TTS error:', err);
+        setSpeakingMessageId(null);
+        console.error(`❌ Failed to speak ${langInfo.name} text with backend TTS. Falling back to browser TTS...`);
+
+        // Fallback to browser TTS on error
+        useBrowserTTS(text, messageId, langInfo);
       }
+    } else {
+      // Use browser TTS for English
+      useBrowserTTS(text, messageId, langInfo);
     }
+  };
 
-    // Use browser Text-to-Speech
+  // Helper function for browser TTS
+  const useBrowserTTS = (text: string, messageId: string, langInfo: any) => {
+    const voices = window.speechSynthesis.getVoices();
+    const englishVoice = voices.find(voice =>
+      voice.lang.startsWith('en-US') ||
+      voice.lang.startsWith('en-GB') ||
+      voice.lang.startsWith('en')
+    );
+
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
-    utterance.lang = preferredLangs[0]; // Set language
+    utterance.lang = 'en-US';
 
-    // Set voice if found
-    if (selectedVoice) {
-      utterance.voice = selectedVoice;
-      console.log(`Using voice: ${selectedVoice.name} (${selectedVoice.lang})`);
+    if (englishVoice) {
+      utterance.voice = englishVoice;
+      console.log(`Using browser voice: ${englishVoice.name} (${englishVoice.lang})`);
     }
 
     utterance.onstart = () => {
       setSpeakingMessageId(messageId);
-      if (mixedLangInfo.isMixed) {
-        console.log('⚠️ Mixed-language TTS: Only portions matching the voice language may be spoken correctly.');
-      }
-      if (!selectedVoice) {
-        console.error('❌ No voice available. Please install language packs in Windows Settings.');
-      }
     };
 
     utterance.onend = () => {
@@ -245,12 +273,7 @@ export default function FloatingChatbot() {
 
     utterance.onerror = (event) => {
       setSpeakingMessageId(null);
-      console.error('Speech synthesis error:', event.error);
-      if (event.error === 'not-allowed') {
-        console.error('❌ Speech synthesis not allowed. Please check browser permissions.');
-      } else if (event.error === 'language-unavailable') {
-        console.error(`❌ Language unavailable: ${langInfo.name}. Install language pack in Windows Settings > Time & Language > Speech.`);
-      }
+      console.error('Browser TTS error:', event.error);
     };
 
     window.speechSynthesis.speak(utterance);
