@@ -69,7 +69,9 @@
     "loadingTasks": "کام لوڈ ہو رہے ہیں...",
     "areYouSure": "کیا آپ کو یقین ہے؟",
     "saving": "محفوظ ہو رہا ہے...",
-    "required": "*"
+    "required": "*",
+    "searchPlaceholder": "عنوان یا تفصیل سے کام تلاش کریں...",
+    "clearSearch": "تلاش صاف کریں"
   },
   "priorities": {
     "low": "کم",

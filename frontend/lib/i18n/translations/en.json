@@ -69,7 +69,9 @@
     "loadingTasks": "Loading tasks...",
     "areYouSure": "Are you sure?",
     "saving": "Saving...",
-    "required": "*"
+    "required": "*",
+    "searchPlaceholder": "Search tasks by title or description...",
+    "clearSearch": "Clear search"
   },
   "priorities": {
     "low": "Low",
