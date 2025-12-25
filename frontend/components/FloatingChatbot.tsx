@@ -198,11 +198,22 @@ export default function FloatingChatbot() {
       if (selectedVoice) break;
     }
 
-    // If no voice found for the language, show a warning and don't speak
+    // If no voice found for the language, fall back to English voice
     if (!selectedVoice && langInfo.code !== 'en') {
       console.warn(`No voice available for ${langInfo.name}. Available voices:`, voices.map(v => v.lang));
-      alert(`Text-to-speech is not available for ${langInfo.name}. Your browser doesn't have voices installed for this language.`);
-      return;
+      console.warn(`Falling back to English voice. Install ${langInfo.name} language pack in Windows Settings for proper pronunciation.`);
+
+      // Try to find an English voice as fallback
+      const englishVoice = voices.find(voice =>
+        voice.lang.startsWith('en-US') ||
+        voice.lang.startsWith('en-GB') ||
+        voice.lang.startsWith('en')
+      );
+
+      if (englishVoice) {
+        selectedVoice = englishVoice;
+        console.log(`Using fallback voice: ${englishVoice.name} (${englishVoice.lang})`);
+      }
     }
 
     // Use browser Text-to-Speech
@@ -223,6 +234,9 @@ export default function FloatingChatbot() {
       if (mixedLangInfo.isMixed) {
         console.log('⚠️ Mixed-language TTS: Only portions matching the voice language may be spoken correctly.');
       }
+      if (!selectedVoice) {
+        console.error('❌ No voice available. Please install language packs in Windows Settings.');
+      }
     };
 
     utterance.onend = () => {
@@ -232,8 +246,10 @@ export default function FloatingChatbot() {
     utterance.onerror = (event) => {
       setSpeakingMessageId(null);
       console.error('Speech synthesis error:', event.error);
-      if (event.error === 'not-allowed' || event.error === 'language-unavailable') {
-        alert(`Text-to-speech failed: ${event.error}. Your browser may not support ${langInfo.name} speech.`);
+      if (event.error === 'not-allowed') {
+        console.error('❌ Speech synthesis not allowed. Please check browser permissions.');
+      } else if (event.error === 'language-unavailable') {
+        console.error(`❌ Language unavailable: ${langInfo.name}. Install language pack in Windows Settings > Time & Language > Speech.`);
       }
     };
 
