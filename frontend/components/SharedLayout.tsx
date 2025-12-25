@@ -22,15 +22,15 @@ export default function SharedLayout({
   // This removes the duplicate navbar and footer from these views
   if (isDashboardOrChat) {
     return (
-      <>
+      <div className="relative">
         {children}
         <FloatingChatbot />
-      </>
+      </div>
     );
   }
 
   return (
-    <>
+    <div className="relative">
       <nav className="sticky top-0 z-40 w-full glass border-b border-gray-200 shadow-lg py-3"> {/* Changed glass-dark to glass, border-white/10 to border-gray-200 */}
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex justify-between items-center">
           {/* Branding */}
@@ -111,6 +111,6 @@ export default function SharedLayout({
           </div>
         </div>
       </footer>
-    </>
+    </div>
   );
 }

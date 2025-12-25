@@ -172,7 +172,7 @@ export default function DashboardPage() {
 
   return (
     // UPDATED: Removed min-h-screen to let Layout handle height if needed, keeping gradient for style
-    <main className="w-full min-h-[calc(100vh-4rem)] text-white relative z-10 bg-gradient-to-br from-[#0f172a] via-[#1e3a8a] to-[#0c4a6e]">
+    <main className="w-full min-h-[calc(100vh-4rem)] text-white relative bg-gradient-to-br from-[#0f172a] via-[#1e3a8a] to-[#0c4a6e]">
       <nav className="glass py-3 px-4 sm:px-6 lg:px-8 flex justify-between items-center mb-8">
         <div className="flex items-center gap-4">
           <span className="text-xl font-bold text-white">Welcome, {user?.name || user?.email || "Test User"}!</span>
@@ -466,7 +466,32 @@ const TaskDialog = ({ isOpen, onClose, onSave, task, title, t }: { isOpen: boole
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSaving(true);
-    await onSave(formData);
+
+    // Clean formData: convert to proper backend format
+    const cleanedData: any = {};
+
+    // Always include title (required)
+    cleanedData.title = formData.title;
+
+    // For description, allow empty string (to clear description)
+    if (formData.description !== undefined) {
+      cleanedData.description = formData.description || null;
+    }
+
+    // Include priority_id
+    if (formData.priority_id) {
+      cleanedData.priority_id = formData.priority_id;
+    }
+
+    // Convert due_date to ISO 8601 datetime format or null
+    if (formData.due_date) {
+      cleanedData.due_date = `${formData.due_date}T00:00:00Z`;
+    } else if (task) {
+      // If editing and due_date is empty, explicitly set to null to clear it
+      cleanedData.due_date = null;
+    }
+
+    await onSave(cleanedData);
     setIsSaving(false);
   };
 
