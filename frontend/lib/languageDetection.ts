@@ -147,3 +147,50 @@ export function getChatBubbleAlignment(direction: 'ltr' | 'rtl', role: 'user' | 
   }
   return direction === 'rtl' ? 'justify-end' : 'justify-start';
 }
+
+/**
+ * Detect if text contains mixed languages (e.g., Urdu + English)
+ * Returns true if text has significant content in multiple scripts
+ */
+export function isMixedLanguage(text: string): { isMixed: boolean; scripts: string[] } {
+  const trimmed = text.trim();
+  if (!trimmed) {
+    return { isMixed: false, scripts: ['latin'] };
+  }
+
+  let arabicScriptCount = 0;
+  let latinCount = 0;
+  let totalAlphaChars = 0;
+
+  for (const char of trimmed) {
+    const code = char.charCodeAt(0);
+
+    // Arabic/Urdu script
+    if ((code >= 0x0600 && code <= 0x06FF) || (code >= 0xFB50 && code <= 0xFDFF)) {
+      arabicScriptCount++;
+      totalAlphaChars++;
+    }
+    // Latin script (A-Z, a-z)
+    else if ((code >= 0x0041 && code <= 0x005A) || (code >= 0x0061 && code <= 0x007A)) {
+      latinCount++;
+      totalAlphaChars++;
+    }
+  }
+
+  if (totalAlphaChars === 0) {
+    return { isMixed: false, scripts: ['latin'] };
+  }
+
+  const arabicPercent = arabicScriptCount / totalAlphaChars;
+  const latinPercent = latinCount / totalAlphaChars;
+
+  // Consider it mixed if both scripts have significant presence (>15%)
+  const scripts: string[] = [];
+  if (arabicPercent > 0.15) scripts.push('arabic');
+  if (latinPercent > 0.15) scripts.push('latin');
+
+  return {
+    isMixed: scripts.length > 1,
+    scripts
+  };
+}

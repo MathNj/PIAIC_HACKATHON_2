@@ -4,7 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useAuth } from "@/components/AuthProvider";
 import { api } from "@/lib/api";
 import { useLanguage } from "@/lib/i18n/LanguageContext";
-import { detectLanguage } from "@/lib/languageDetection";
+import { detectLanguage, isMixedLanguage } from "@/lib/languageDetection";
 
 interface Message {
   id: string;
@@ -165,22 +165,32 @@ export default function FloatingChatbot() {
       return;
     }
 
-    // Detect language of the text
+    // Check for mixed-language content
+    const mixedLangInfo = isMixedLanguage(text);
+
+    // Detect primary language of the text
     const langInfo = detectLanguage(text);
+
+    // Warn user about mixed-language limitations
+    if (mixedLangInfo.isMixed) {
+      console.warn('Mixed-language content detected:', mixedLangInfo.scripts);
+      console.log('Primary language detected:', langInfo.code, langInfo.name);
+      console.log('Note: Text-to-speech may only pronounce parts of mixed-language text correctly.');
+    }
 
     // Map language codes to speech synthesis language codes
     const langMap: Record<string, string[]> = {
-      urdu: ['ur-PK', 'ur-IN', 'ur'],
-      arabic: ['ar-SA', 'ar-AE', 'ar-EG', 'ar'],
-      french: ['fr-FR', 'fr-CA', 'fr'],
-      english: ['en-US', 'en-GB', 'en-AU', 'en']
+      ur: ['ur-PK', 'ur-IN', 'ur'],
+      ar: ['ar-SA', 'ar-AE', 'ar-EG', 'ar'],
+      fr: ['fr-FR', 'fr-CA', 'fr'],
+      en: ['en-US', 'en-GB', 'en-AU', 'en']
     };
 
     // Get available voices
     const voices = window.speechSynthesis.getVoices();
 
     // Find a voice that matches the detected language
-    const preferredLangs = langMap[langInfo.language] || ['en-US'];
+    const preferredLangs = langMap[langInfo.code] || ['en-US'];
     let selectedVoice = null;
 
     for (const lang of preferredLangs) {
@@ -189,9 +199,9 @@ export default function FloatingChatbot() {
     }
 
     // If no voice found for the language, show a warning and don't speak
-    if (!selectedVoice && langInfo.language !== 'english') {
-      console.warn(`No voice available for ${langInfo.language}. Available voices:`, voices.map(v => v.lang));
-      alert(`Text-to-speech is not available for ${langInfo.language}. Your browser doesn't have voices installed for this language.`);
+    if (!selectedVoice && langInfo.code !== 'en') {
+      console.warn(`No voice available for ${langInfo.name}. Available voices:`, voices.map(v => v.lang));
+      alert(`Text-to-speech is not available for ${langInfo.name}. Your browser doesn't have voices installed for this language.`);
       return;
     }
 
@@ -205,10 +215,14 @@ export default function FloatingChatbot() {
     // Set voice if found
     if (selectedVoice) {
       utterance.voice = selectedVoice;
+      console.log(`Using voice: ${selectedVoice.name} (${selectedVoice.lang})`);
     }
 
     utterance.onstart = () => {
       setSpeakingMessageId(messageId);
+      if (mixedLangInfo.isMixed) {
+        console.log('⚠️ Mixed-language TTS: Only portions matching the voice language may be spoken correctly.');
+      }
     };
 
     utterance.onend = () => {
@@ -219,7 +233,7 @@ export default function FloatingChatbot() {
       setSpeakingMessageId(null);
       console.error('Speech synthesis error:', event.error);
       if (event.error === 'not-allowed' || event.error === 'language-unavailable') {
-        alert(`Text-to-speech failed: ${event.error}. Your browser may not support ${langInfo.language} speech.`);
+        alert(`Text-to-speech failed: ${event.error}. Your browser may not support ${langInfo.name} speech.`);
       }
     };
 
