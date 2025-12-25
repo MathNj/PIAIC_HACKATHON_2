@@ -38,6 +38,23 @@ export default function ChatPage() {
   }, [messages]);
 
   /**
+   * Load message history for a conversation
+   */
+  const loadMessages = async (convId: string) => {
+    try {
+      setError(null);
+      setLoading(true);
+      const history = await chatkitAdapter.loadConversationHistory(convId);
+      setMessages(history as any);
+    } catch (err) {
+      console.error('Failed to load messages:', err);
+      setError('Failed to load conversation history.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  /**
    * Create a new conversation
    */
   const createNewConversation = async () => {
@@ -51,6 +68,33 @@ export default function ChatPage() {
       setError('Failed to create new conversation. Please try again.');
     }
   };
+
+  /**
+   * Load most recent conversation on mount
+   */
+  useEffect(() => {
+    async function loadRecentConversation() {
+      if (!user) return;
+
+      try {
+        const { conversations } = await chatkitAdapter.listConversations(1);
+        if (conversations.length > 0) {
+          const recentConv = conversations[0];
+          setConversationId(recentConv.id);
+          await loadMessages(recentConv.id);
+        } else {
+          // No conversations exist, create a new one
+          await createNewConversation();
+        }
+      } catch (err) {
+        console.error('Failed to load recent conversation:', err);
+        // Fallback: create new conversation
+        await createNewConversation();
+      }
+    }
+
+    loadRecentConversation();
+  }, [user]);
 
   /**
    * Send a message to the current conversation

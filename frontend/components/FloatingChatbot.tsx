@@ -185,11 +185,11 @@ export default function FloatingChatbot() {
         setSpeakingMessageId(messageId);
 
         // Get JWT token
-        const token = localStorage.getItem('token');
+        const token = localStorage.getItem('jwt_token');
         const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
 
         // Call backend multilingual TTS endpoint
-        const response = await fetch(`${API_BASE_URL}/api/voice/multilingual`, {
+        const response = await fetch(`${API_BASE_URL}/tts/speak`, {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
@@ -331,9 +331,7 @@ export default function FloatingChatbot() {
 
     setLoadingConversations(true);
     try {
-      const response = await api.get('/api/chat/conversations', {
-        params: { limit: 20 }
-      });
+      const response = await api.get('/api/chat/conversations?limit=20');
       setConversations(response.conversations || []);
     } catch (err) {
       console.error('Failed to fetch conversations:', err);
