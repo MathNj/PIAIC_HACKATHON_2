@@ -106,6 +106,27 @@ export default function FloatingChatbot() {
     }
   }, [voiceInputLang]); // Re-initialize when language changes
 
+  // Load speech synthesis voices
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.speechSynthesis) {
+      // Load voices (may be async in some browsers)
+      const loadVoices = () => {
+        const voices = window.speechSynthesis.getVoices();
+        if (voices.length > 0) {
+          console.log('Available speech voices:', voices.map(v => `${v.name} (${v.lang})`));
+        }
+      };
+
+      // Load immediately
+      loadVoices();
+
+      // Some browsers fire this event when voices are loaded
+      if (window.speechSynthesis.onvoiceschanged !== undefined) {
+        window.speechSynthesis.onvoiceschanged = loadVoices;
+      }
+    }
+  }, []);
+
   const toggleVoiceRecognition = () => {
     if (!recognitionRef.current) {
       alert(t('voice.notSupported'));
@@ -144,11 +165,47 @@ export default function FloatingChatbot() {
       return;
     }
 
+    // Detect language of the text
+    const langInfo = detectLanguage(text);
+
+    // Map language codes to speech synthesis language codes
+    const langMap: Record<string, string[]> = {
+      urdu: ['ur-PK', 'ur-IN', 'ur'],
+      arabic: ['ar-SA', 'ar-AE', 'ar-EG', 'ar'],
+      french: ['fr-FR', 'fr-CA', 'fr'],
+      english: ['en-US', 'en-GB', 'en-AU', 'en']
+    };
+
+    // Get available voices
+    const voices = window.speechSynthesis.getVoices();
+
+    // Find a voice that matches the detected language
+    const preferredLangs = langMap[langInfo.language] || ['en-US'];
+    let selectedVoice = null;
+
+    for (const lang of preferredLangs) {
+      selectedVoice = voices.find(voice => voice.lang.startsWith(lang));
+      if (selectedVoice) break;
+    }
+
+    // If no voice found for the language, show a warning and don't speak
+    if (!selectedVoice && langInfo.language !== 'english') {
+      console.warn(`No voice available for ${langInfo.language}. Available voices:`, voices.map(v => v.lang));
+      alert(`Text-to-speech is not available for ${langInfo.language}. Your browser doesn't have voices installed for this language.`);
+      return;
+    }
+
     // Use browser Text-to-Speech
     const utterance = new SpeechSynthesisUtterance(text);
     utterance.rate = 1.0;
     utterance.pitch = 1.0;
     utterance.volume = 1.0;
+    utterance.lang = preferredLangs[0]; // Set language
+
+    // Set voice if found
+    if (selectedVoice) {
+      utterance.voice = selectedVoice;
+    }
 
     utterance.onstart = () => {
       setSpeakingMessageId(messageId);
@@ -158,9 +215,12 @@ export default function FloatingChatbot() {
       setSpeakingMessageId(null);
     };
 
-    utterance.onerror = () => {
+    utterance.onerror = (event) => {
       setSpeakingMessageId(null);
-      console.error('Speech synthesis error');
+      console.error('Speech synthesis error:', event.error);
+      if (event.error === 'not-allowed' || event.error === 'language-unavailable') {
+        alert(`Text-to-speech failed: ${event.error}. Your browser may not support ${langInfo.language} speech.`);
+      }
     };
 
     window.speechSynthesis.speak(utterance);
