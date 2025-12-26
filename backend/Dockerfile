@@ -29,7 +29,7 @@ COPY --from=builder /app/.venv /app/.venv
 # Copy source code
 COPY --chown=appuser:appuser ./app /app/app
 COPY --chown=appuser:appuser ./agent_runner /app/agent_runner
-COPY --chown=appuser:appuser ./mcp /app/mcp
+COPY --chown=appuser:appuser ./app_mcp /app/app_mcp
 COPY --chown=appuser:appuser ./alembic /app/alembic
 COPY --chown=appuser:appuser ./alembic.ini /app/alembic.ini
 
