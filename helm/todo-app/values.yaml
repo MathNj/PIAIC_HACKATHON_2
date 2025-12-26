@@ -75,6 +75,21 @@ backend:
         secretKeyRef:
           name: app-secrets
           key: jwt-secret
+    - name: OPENAI_API_KEY
+      valueFrom:
+        secretKeyRef:
+          name: app-secrets
+          key: openai-api-key
+    - name: OPENAI_BASE_URL
+      valueFrom:
+        secretKeyRef:
+          name: app-secrets
+          key: openai-base-url
+    - name: OPENAI_MODEL
+      valueFrom:
+        secretKeyRef:
+          name: app-secrets
+          key: openai-model
 
   # Pod labels
   labels:

@@ -128,3 +128,7 @@ alembic/versions/__pycache__/
 temp_*.yaml
 temp_*.txt
 nul
+
+# Kubernetes secrets (sensitive data)
+k8s/secrets/app-secrets.yaml
+**/values-production.yaml
