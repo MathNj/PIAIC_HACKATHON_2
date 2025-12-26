@@ -1,0 +1,72 @@
+🎉 Todo Chatbot Application has been deployed!
+
+Release Name: {{ .Release.Name }}
+Namespace: {{ .Release.Namespace }}
+
+📦 Deployed Components:
+{{- if .Values.backend.enabled }}
+  ✅ Backend (FastAPI) - {{ .Values.backend.replicaCount }} replica(s)
+{{- end }}
+{{- if .Values.frontend.enabled }}
+  ✅ Frontend (Next.js) - {{ .Values.frontend.replicaCount }} replica(s)
+{{- end }}
+
+🔍 Check deployment status:
+  kubectl get pods -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+📊 View all resources:
+  kubectl get all -n {{ .Release.Namespace }} -l app.kubernetes.io/instance={{ .Release.Name }}
+
+{{- if .Values.frontend.enabled }}
+
+🌐 Access the Frontend:
+{{- if eq .Values.frontend.service.type "NodePort" }}
+
+  Option 1 - Minikube Service (Recommended):
+    minikube service {{ include "todo-app.fullname" . }}-frontend
+
+  Option 2 - Direct URL:
+    export NODE_IP=$(minikube ip)
+    export NODE_PORT={{ .Values.frontend.service.nodePort }}
+    echo "Frontend URL: http://$NODE_IP:$NODE_PORT"
+
+  Option 3 - Port Forward:
+    kubectl port-forward -n {{ .Release.Namespace }} service/{{ include "todo-app.fullname" . }}-frontend 3000:3000
+    echo "Frontend URL: http://localhost:3000"
+{{- else if eq .Values.frontend.service.type "LoadBalancer" }}
+
+  NOTE: It may take a few minutes for the LoadBalancer IP to be available.
+  Watch the status with:
+    kubectl get svc -n {{ .Release.Namespace }} {{ include "todo-app.fullname" . }}-frontend --watch
+
+  Get the URL:
+    export SERVICE_IP=$(kubectl get svc -n {{ .Release.Namespace }} {{ include "todo-app.fullname" . }}-frontend -o jsonpath='{.status.loadBalancer.ingress[0].ip}')
+    echo "Frontend URL: http://$SERVICE_IP:{{ .Values.frontend.service.port }}"
+{{- end }}
+{{- end }}
+
+{{- if .Values.backend.enabled }}
+
+🔧 Access the Backend API:
+
+  Port Forward:
+    kubectl port-forward -n {{ .Release.Namespace }} service/{{ include "todo-app.fullname" . }}-backend 8000:8000
+
+  Health Check:
+    curl http://localhost:8000/health
+
+  API Documentation:
+    http://localhost:8000/docs
+{{- end }}
+
+📝 View Logs:
+  Backend:  kubectl logs -n {{ .Release.Namespace }} -l app=todo-backend --tail=50 -f
+  Frontend: kubectl logs -n {{ .Release.Namespace }} -l app=todo-frontend --tail=50 -f
+
+🔄 Upgrade the release:
+  helm upgrade {{ .Release.Name }} ./helm/todo-app
+
+🗑️  Uninstall the release:
+  helm uninstall {{ .Release.Name }}
+
+📚 For more information, visit: https://github.com/MathNj/PIAIC_HACKATHON_2

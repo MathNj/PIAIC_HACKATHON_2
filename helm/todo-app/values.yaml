@@ -1,0 +1,202 @@
+# Default values for todo-app Helm chart
+# This is a YAML-formatted file for configuring the Todo Chatbot application
+
+# Global configuration
+global:
+  # Secrets configuration
+  secrets:
+    # Name of the Kubernetes secret containing sensitive data
+    name: app-secrets
+    # Database URL secret key
+    databaseUrlKey: database-url
+    # JWT secret key
+    jwtSecretKey: jwt-secret
+
+# Backend service configuration (FastAPI)
+backend:
+  # Enable backend deployment
+  enabled: true
+
+  # Number of backend replicas
+  replicaCount: 2
+
+  # Docker image configuration
+  image:
+    repository: todo-backend
+    pullPolicy: Never  # Use local image from Minikube
+    tag: latest
+
+  # Service configuration
+  service:
+    type: ClusterIP
+    port: 8000
+    targetPort: 8000
+    name: http
+
+  # Resource limits and requests
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Health check probes
+  livenessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 15
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /health
+      port: 8000
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  # Environment variables
+  env:
+    - name: PYTHONUNBUFFERED
+      value: "1"
+    - name: DATABASE_URL
+      valueFrom:
+        secretKeyRef:
+          name: app-secrets
+          key: database-url
+    - name: BETTER_AUTH_SECRET
+      valueFrom:
+        secretKeyRef:
+          name: app-secrets
+          key: jwt-secret
+
+  # Pod labels
+  labels:
+    app: todo-backend
+    tier: backend
+
+  # Pod annotations
+  annotations: {}
+
+# Frontend service configuration (Next.js)
+frontend:
+  # Enable frontend deployment
+  enabled: true
+
+  # Number of frontend replicas
+  replicaCount: 2
+
+  # Docker image configuration
+  image:
+    repository: todo-frontend
+    pullPolicy: Never  # Use local image from Minikube
+    tag: latest
+
+  # Service configuration
+  service:
+    type: NodePort
+    port: 3000
+    targetPort: 3000
+    nodePort: 30080
+    name: http
+
+  # Resource limits and requests
+  resources:
+    requests:
+      cpu: 250m
+      memory: 256Mi
+    limits:
+      cpu: 500m
+      memory: 512Mi
+
+  # Health check probes
+  livenessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 15
+    periodSeconds: 30
+    timeoutSeconds: 5
+    failureThreshold: 3
+
+  readinessProbe:
+    httpGet:
+      path: /
+      port: 3000
+    initialDelaySeconds: 10
+    periodSeconds: 10
+    timeoutSeconds: 3
+    failureThreshold: 3
+
+  # Environment variables
+  env:
+    - name: NEXT_PUBLIC_API_URL
+      value: "http://todo-app-backend:8000"
+    - name: NODE_ENV
+      value: "production"
+
+  # Pod labels
+  labels:
+    app: todo-frontend
+    tier: frontend
+
+  # Pod annotations
+  annotations: {}
+
+# Ingress configuration (disabled for local Minikube)
+ingress:
+  enabled: false
+  className: ""
+  annotations: {}
+  hosts:
+    - host: todo-app.local
+      paths:
+        - path: /
+          pathType: Prefix
+          backend:
+            service:
+              name: frontend
+              port: 3000
+  tls: []
+
+# Autoscaling configuration (disabled by default)
+autoscaling:
+  enabled: false
+  minReplicas: 2
+  maxReplicas: 10
+  targetCPUUtilizationPercentage: 80
+  targetMemoryUtilizationPercentage: 80
+
+# Node selector for pod scheduling
+nodeSelector: {}
+
+# Tolerations for pod scheduling
+tolerations: []
+
+# Affinity rules for pod scheduling
+affinity: {}
+
+# Pod security context
+podSecurityContext: {}
+
+# Container security context
+securityContext: {}
+
+# Service account configuration
+serviceAccount:
+  create: false
+  annotations: {}
+  name: ""
+
+# Image pull secrets (not needed for local images)
+imagePullSecrets: []
+
+# Name overrides
+nameOverride: ""
+fullnameOverride: ""
