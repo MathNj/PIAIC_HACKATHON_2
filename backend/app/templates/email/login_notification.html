@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>New Login Detected</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #4F46E5;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #4F46E5;
+            font-size: 24px;
+            margin: 0;
+        }
+        .header .emoji {
+            font-size: 32px;
+            margin-right: 10px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .content h2 {
+            color: #1f2937;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        .content p {
+            margin: 10px 0;
+            color: #4b5563;
+        }
+        .security-badge {
+            background-color: #fef3c7;
+            border-left: 4px solid #f59e0b;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .security-badge p {
+            margin: 8px 0;
+        }
+        .security-badge strong {
+            color: #1f2937;
+        }
+        .button {
+            display: inline-block;
+            padding: 12px 24px;
+            background-color: #ef4444;
+            color: #ffffff !important;
+            text-decoration: none;
+            border-radius: 6px;
+            font-weight: 600;
+            text-align: center;
+            margin: 20px 0;
+        }
+        .button:hover {
+            background-color: #dc2626;
+        }
+        .footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 30px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #4F46E5;
+            text-decoration: none;
+        }
+        .footer em {
+            display: block;
+            margin-top: 10px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span class="emoji">📋</span>TODO App</h1>
+        </div>
+
+        <div class="content">
+            <h2>New Login Detected</h2>
+            <p>Hi {{ user_name }},</p>
+            <p>We detected a new login to your TODO account:</p>
+
+            <div class="security-badge">
+                <p><strong>🔐 Login Details:</strong></p>
+                <p><strong>Time:</strong> {{ login_time }}</p>
+                <p><strong>IP Address:</strong> {{ ip_address }}</p>
+                <p><strong>Device/Browser:</strong> {{ user_agent }}</p>
+            </div>
+
+            <p>If this was you, no action is needed.</p>
+
+            <p><strong>If you don't recognize this activity:</strong></p>
+            <p>Your account may be compromised. Please secure it immediately.</p>
+
+            <a href="{{ app_url }}/settings/security" class="button">Secure Your Account</a>
+
+            <p style="color: #6b7280; font-size: 14px; margin-top: 20px;">
+                <em>This is an automated security notification. We send these alerts to help protect your account.</em>
+            </p>
+        </div>
+
+        <div class="footer">
+            <p>Sent from TODO App Security Team</p>
+            <p><a href="{{ app_url }}/settings">Manage Email Preferences</a></p>
+        </div>
+    </div>
+</body>
+</html>

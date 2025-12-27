@@ -13,9 +13,11 @@ from datetime import datetime
 from app.database import get_session
 from app.models.task import Task
 from app.models.task_tag import TaskTag
+from app.models.user import User
 from app.schemas.task import TaskRead, TaskCreate, TaskUpdate
 from app.auth.dependencies import get_current_user
 from app.dapr.client import dapr_client
+from app.services.email import email_service
 
 router = APIRouter(prefix="/api", tags=["Tasks"])
 
@@ -291,6 +293,20 @@ async def create_task(
             # Log the error but don't fail the request - event publishing is non-critical
             print(f"Warning: Failed to publish task_created event: {str(pub_error)}")
 
+        # Send email notification
+        try:
+            # Fetch user from database to get email and name
+            user_statement = select(User).where(User.id == current_user)
+            user = session.exec(user_statement).first()
+
+            if user:
+                await email_service.send_task_created_email(user, new_task)
+            else:
+                print(f"Warning: User {current_user} not found for email notification")
+        except Exception as email_error:
+            # Log the error but don't fail the request - email is non-critical
+            print(f"Warning: Failed to send task created email: {str(email_error)}")
+
         # Convert to response schema with string user_id
         return TaskRead(
             id=new_task.id,
@@ -517,6 +533,29 @@ async def update_task(
         except Exception as pub_error:
             print(f"Warning: Failed to publish task_updated event: {str(pub_error)}")
 
+        # Send email notification
+        try:
+            # Fetch user from database to get email and name
+            user_statement = select(User).where(User.id == current_user)
+            user = session.exec(user_statement).first()
+
+            if user:
+                # Determine what changed (for email template)
+                changes = []
+                for field, value in update_data.items():
+                    if field != "tag_ids":  # tag_ids handled separately
+                        changes.append(f"{field}: {value}")
+
+                if new_tag_ids is not None:
+                    changes.append(f"tags: updated")
+
+                await email_service.send_task_updated_email(user, task, changes)
+            else:
+                print(f"Warning: User {current_user} not found for email notification")
+        except Exception as email_error:
+            # Log the error but don't fail the request - email is non-critical
+            print(f"Warning: Failed to send task updated email: {str(email_error)}")
+
         # Convert to response schema with string user_id
         return TaskRead(
             id=task.id,
@@ -608,6 +647,20 @@ async def delete_task(
         "created_at": task.created_at.isoformat(),
         "updated_at": task.updated_at.isoformat()
     }
+
+    # Send email notification before deletion (need task object)
+    try:
+        # Fetch user from database to get email and name
+        user_statement = select(User).where(User.id == current_user)
+        user = session.exec(user_statement).first()
+
+        if user:
+            await email_service.send_task_deleted_email(user, task)
+        else:
+            print(f"Warning: User {current_user} not found for email notification")
+    except Exception as email_error:
+        # Log the error but don't fail the request - email is non-critical
+        print(f"Warning: Failed to send task deleted email: {str(email_error)}")
 
     # Delete from database (hard delete)
     try:
@@ -741,6 +794,22 @@ async def toggle_task_completion(
             print(f"Published {event_type} event for task {task.id}")
         except Exception as pub_error:
             print(f"Warning: Failed to publish task completion event: {str(pub_error)}")
+
+        # Send email notification
+        try:
+            # Fetch user from database to get email and name
+            user_statement = select(User).where(User.id == current_user)
+            user = session.exec(user_statement).first()
+
+            if user:
+                # Notify about completion status change
+                change_description = ["completed: " + str(task.completed)]
+                await email_service.send_task_updated_email(user, task, change_description)
+            else:
+                print(f"Warning: User {current_user} not found for email notification")
+        except Exception as email_error:
+            # Log the error but don't fail the request - email is non-critical
+            print(f"Warning: Failed to send task completion email: {str(email_error)}")
 
         # Convert to response schema with string user_id
         return TaskRead(

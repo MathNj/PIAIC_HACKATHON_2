@@ -6,7 +6,7 @@ Endpoints:
 - POST /api/login: Authenticate user and issue JWT token
 """
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Request, status
 from sqlmodel import Session, select
 
 from app.database import get_session
@@ -14,6 +14,7 @@ from app.models.user import User
 from app.schemas.user import UserCreate, UserLogin, UserResponse
 from app.auth.password import hash_password, verify_password
 from app.auth.utils import create_access_token
+from app.services.email import email_service
 
 
 router = APIRouter(prefix="/api", tags=["Authentication"])
@@ -91,6 +92,7 @@ async def signup(
 
 @router.post("/login")
 async def login(
+    request: Request,
     credentials: UserLogin,
     session: Session = Depends(get_session)
 ):
@@ -98,6 +100,7 @@ async def login(
     Authenticate user and issue JWT token.
 
     Args:
+        request: FastAPI request object (for IP address and user agent)
         credentials: User login credentials (email, password)
         session: Database session
 
@@ -128,6 +131,17 @@ async def login(
     access_token = create_access_token(
         data={"sub": str(user.id), "user_id": str(user.id), "email": user.email}
     )
+
+    # Send login notification email
+    try:
+        # Get IP address and user agent
+        ip_address = request.client.host if request.client else "Unknown"
+        user_agent = request.headers.get("user-agent", "Unknown")
+
+        await email_service.send_login_notification_email(user, ip_address, user_agent)
+    except Exception as email_error:
+        # Log the error but don't fail the login - email is non-critical
+        print(f"Warning: Failed to send login notification email: {str(email_error)}")
 
     return {
         "access_token": access_token,

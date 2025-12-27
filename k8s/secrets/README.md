@@ -21,6 +21,13 @@ This directory contains templates and documentation for configuring Kubernetes s
    - `openai-api-key`: Your Groq API key
    - `openai-base-url`: Groq API base URL (already set correctly)
    - `openai-model`: AI model name (already set correctly)
+   - `smtp-server`: SMTP server address (default: smtp.gmail.com)
+   - `smtp-port`: SMTP server port (default: 587)
+   - `smtp-username`: Your Gmail address
+   - `smtp-password`: Gmail app password (not your regular password)
+   - `smtp-from-email`: Email address for sending notifications
+   - `smtp-from-name`: Display name for email sender (e.g., "TODO App Notifications")
+   - `email-notifications-enabled`: Enable/disable email notifications (true/false)
 
 3. Apply the secrets to your Kubernetes cluster:
    ```bash
@@ -42,7 +49,14 @@ kubectl create secret generic app-secrets \
   --from-literal=jwt-secret="your-jwt-secret-min-32-characters-long" \
   --from-literal=openai-api-key="gsk_your-groq-api-key-here" \
   --from-literal=openai-base-url="https://api.groq.com/openai/v1" \
-  --from-literal=openai-model="llama-3.3-70b-versatile"
+  --from-literal=openai-model="llama-3.3-70b-versatile" \
+  --from-literal=smtp-server="smtp.gmail.com" \
+  --from-literal=smtp-port="587" \
+  --from-literal=smtp-username="your-gmail@gmail.com" \
+  --from-literal=smtp-password="your-gmail-app-password" \
+  --from-literal=smtp-from-email="your-gmail@gmail.com" \
+  --from-literal=smtp-from-name="TODO App Notifications" \
+  --from-literal=email-notifications-enabled="true"
 ```
 
 ### Option 3: Using Helm Values (Cloud Deployment)
@@ -83,6 +97,13 @@ helm install todo-app ./helm/todo-app -f values-production.yaml
 | `openai-api-key` | Groq API key for AI agent | `gsk_...` |
 | `openai-base-url` | Groq API base URL | `https://api.groq.com/openai/v1` |
 | `openai-model` | AI model name | `llama-3.3-70b-versatile` |
+| `smtp-server` | SMTP server address | `smtp.gmail.com` |
+| `smtp-port` | SMTP server port | `587` |
+| `smtp-username` | Gmail address for sending emails | `your-email@gmail.com` |
+| `smtp-password` | Gmail app password | `xxxx xxxx xxxx xxxx` |
+| `smtp-from-email` | Sender email address | `your-email@gmail.com` |
+| `smtp-from-name` | Sender display name | `TODO App Notifications` |
+| `email-notifications-enabled` | Enable/disable email notifications | `true` or `false` |
 
 ## Getting API Keys
 
@@ -97,6 +118,21 @@ helm install todo-app ./helm/todo-app -f values-production.yaml
 2. Navigate to API Keys section
 3. Create a new API key
 4. Copy the key (starts with `gsk_`)
+
+### Gmail SMTP (Email Notifications)
+1. Go to your Google Account settings: https://myaccount.google.com
+2. Navigate to Security → 2-Step Verification (enable if not already enabled)
+3. Go to Security → App passwords
+4. Select app: "Mail", select device: "Other (Custom name)"
+5. Enter a name (e.g., "TODO App")
+6. Click "Generate"
+7. Copy the 16-character app password (format: `xxxx xxxx xxxx xxxx`)
+8. Use your Gmail address as `smtp-username` and `smtp-from-email`
+9. Use the app password as `smtp-password`
+
+**Note**: Never use your actual Gmail password. Always use an app password for security.
+
+To disable email notifications, set `email-notifications-enabled: "false"` in the secrets.
 
 ## Updating Secrets
 

@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Task Deleted</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background-color: #ffffff;
+            border-radius: 8px;
+            padding: 30px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .header {
+            text-align: center;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #4F46E5;
+            margin-bottom: 30px;
+        }
+        .header h1 {
+            color: #4F46E5;
+            font-size: 24px;
+            margin: 0;
+        }
+        .header .emoji {
+            font-size: 32px;
+            margin-right: 10px;
+        }
+        .content {
+            margin-bottom: 30px;
+        }
+        .content h2 {
+            color: #1f2937;
+            font-size: 20px;
+            margin-bottom: 15px;
+        }
+        .content p {
+            margin: 10px 0;
+            color: #4b5563;
+        }
+        .content em {
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .task-details {
+            background-color: #f9fafb;
+            border-left: 4px solid #ef4444;
+            padding: 15px;
+            margin: 20px 0;
+        }
+        .task-details p {
+            margin: 8px 0;
+        }
+        .task-details strong {
+            color: #1f2937;
+        }
+        .footer {
+            text-align: center;
+            padding-top: 20px;
+            border-top: 1px solid #e5e7eb;
+            margin-top: 30px;
+            color: #6b7280;
+            font-size: 14px;
+        }
+        .footer a {
+            color: #4F46E5;
+            text-decoration: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1><span class="emoji">📋</span>TODO App</h1>
+        </div>
+
+        <div class="content">
+            <h2>Task Deleted</h2>
+            <p>Hi {{ user_name }},</p>
+            <p>The following task has been deleted from your TODO list:</p>
+
+            <div class="task-details">
+                <p><strong>📋 Title:</strong> {{ task_title }}</p>
+                <p><strong>📝 Description:</strong> {{ task_description }}</p>
+                <p><strong>📅 Due Date:</strong> {{ task_due_date }}</p>
+                <p><strong>⭐ Priority:</strong> {{ task_priority }}</p>
+                <p><strong>🗑️ Deleted:</strong> {{ deleted_at }}</p>
+            </div>
+
+            <p><em>This action cannot be undone. These details are for your records.</em></p>
+        </div>
+
+        <div class="footer">
+            <p>Sent from TODO App</p>
+            <p><a href="{{ app_url }}/settings">Manage Email Preferences</a></p>
+        </div>
+    </div>
+</body>
+</html>
