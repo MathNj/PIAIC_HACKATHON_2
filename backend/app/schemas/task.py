@@ -6,7 +6,7 @@ Separates database models from API contracts for flexibility.
 """
 
 from pydantic import BaseModel, Field, field_validator, ConfigDict
-from datetime import datetime
+from datetime import datetime, timezone
 from uuid import UUID
 from typing import Optional, Literal
 
@@ -35,8 +35,15 @@ class TaskCreate(TaskBase):
     @classmethod
     def validate_due_date(cls, v):
         """Ensure due date is not in the past."""
-        if v and v < datetime.utcnow():
-            raise ValueError("Due date cannot be in the past")
+        if v:
+            # Handle both timezone-aware and naive datetimes
+            now = datetime.now(timezone.utc)
+            # If incoming datetime is naive, make it UTC-aware
+            if v.tzinfo is None:
+                v = v.replace(tzinfo=timezone.utc)
+            # Compare timezone-aware datetimes
+            if v < now:
+                raise ValueError("Due date cannot be in the past")
         return v
 
     @field_validator('priority_id')

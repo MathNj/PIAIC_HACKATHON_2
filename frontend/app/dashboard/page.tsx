@@ -223,6 +223,8 @@ export default function DashboardPage() {
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
           onNewTask={() => setShowCreateDialog(true)}
+          onReload={fetchTasks}
+          isLoading={loading}
           t={t}
         />
 
@@ -336,7 +338,7 @@ const ErrorMessage = ({ message, onDismiss }: { message: string, onDismiss: () =
 );
 
 // UPDATED: Completely refactored Toolbar for better alignment
-const Toolbar = ({ filter, setFilter, priorityFilter, setPriorityFilter, searchQuery, setSearchQuery, onNewTask, t }: any) => {
+const Toolbar = ({ filter, setFilter, priorityFilter, setPriorityFilter, searchQuery, setSearchQuery, onNewTask, onReload, isLoading, t }: any) => {
   const statusFilters = ["all", "pending", "completed"] as const;
   const priorityFilters = ["all", "low", "normal", "high"] as const;
 
@@ -372,7 +374,7 @@ const Toolbar = ({ filter, setFilter, priorityFilter, setPriorityFilter, searchQ
         </div>
 
         {/* Search Input */}
-        <div className="relative w-full sm:w-[26rem] md:w-[32rem]">
+        <div className="relative w-full sm:w-[22rem] md:w-[28rem]">
           <input
             type="text"
             value={searchQuery}
@@ -406,13 +408,35 @@ const Toolbar = ({ filter, setFilter, priorityFilter, setPriorityFilter, searchQ
         </div>
       </div>
 
-      {/* Right Side: Action Button */}
-      <button
-        onClick={onNewTask}
-        className="w-full md:w-auto btn-primary hover-scale flex justify-center items-center py-2.5 px-6 whitespace-nowrap shrink-0"
-      >
-        {t('tasks.newTask')}
-      </button>
+      {/* Right Side: Action Buttons */}
+      <div className="flex gap-2 w-full md:w-auto">
+        <button
+          onClick={onReload}
+          disabled={isLoading}
+          className="btn-secondary hover-scale flex justify-center items-center py-2.5 px-4 whitespace-nowrap shrink-0 disabled:opacity-50 disabled:cursor-not-allowed"
+          title="Reload tasks"
+        >
+          <svg
+            className={`w-5 h-5 ${isLoading ? 'animate-spin' : ''}`}
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"
+            />
+          </svg>
+        </button>
+        <button
+          onClick={onNewTask}
+          className="flex-1 md:flex-none btn-primary hover-scale flex justify-center items-center py-2.5 px-6 whitespace-nowrap shrink-0"
+        >
+          {t('tasks.newTask')}
+        </button>
+      </div>
     </div>
   );
 };

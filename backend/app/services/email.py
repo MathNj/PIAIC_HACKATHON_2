@@ -42,6 +42,23 @@ class EmailService:
 
         logger.info(f"EmailService initialized (enabled={self.enabled})")
 
+    def _get_priority_name(self, priority_id: Optional[int]) -> str:
+        """
+        Map priority_id to priority name.
+
+        Args:
+            priority_id: Integer priority (1=High, 2=Normal, 3=Low)
+
+        Returns:
+            Priority name string
+        """
+        priority_map = {
+            1: "HIGH",
+            2: "NORMAL",
+            3: "LOW"
+        }
+        return priority_map.get(priority_id, "NORMAL")
+
     def _get_smtp_connection(self) -> smtplib.SMTP:
         """
         Establish SMTP connection to Gmail.
@@ -179,7 +196,7 @@ class EmailService:
                 "task_title": task.title,
                 "task_description": task.description or "No description",
                 "task_due_date": task.due_date.strftime("%Y-%m-%d") if task.due_date else "No due date",
-                "task_priority": task.priority.upper() if task.priority else "NORMAL",
+                "task_priority": self._get_priority_name(task.priority_id),
                 "task_created_at": task.created_at.strftime("%Y-%m-%d %H:%M UTC"),
                 "task_id": str(task.id),
                 "app_url": settings.FRONTEND_URL
@@ -242,33 +259,31 @@ class EmailService:
     async def send_task_deleted_email(
         self,
         user: User,
-        task_title: str,
-        task_details: Dict[str, Any]
+        task: Task
     ) -> None:
         """
         Send notification for task deletion.
 
         Args:
             user: User who deleted the task
-            task_title: Title of deleted task
-            task_details: Dictionary with task details for records
+            task: Task object being deleted
         """
         try:
             # Prepare template variables
             variables = {
                 "user_name": user.name,
-                "task_title": task_title,
-                "task_description": task_details.get("description") or "No description",
-                "task_due_date": task_details.get("due_date") or "No due date",
-                "task_priority": task_details.get("priority", "normal").upper(),
-                "deleted_at": task_details.get("deleted_at", datetime.utcnow().isoformat())
+                "task_title": task.title,
+                "task_description": task.description or "No description",
+                "task_due_date": task.due_date.strftime("%Y-%m-%d") if task.due_date else "No due date",
+                "task_priority": self._get_priority_name(task.priority_id),
+                "deleted_at": datetime.utcnow().strftime("%Y-%m-%d %H:%M UTC")
             }
 
             # Render template
             html_body = self._render_template("task_deleted", variables)
 
             # Send email
-            subject = f"Task Deleted: {task_title}"
+            subject = f"Task Deleted: {task.title}"
             await self.send_email(
                 to=user.email,
                 subject=subject,

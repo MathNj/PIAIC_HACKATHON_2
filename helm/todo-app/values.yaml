@@ -24,7 +24,7 @@ backend:
   image:
     repository: todo-backend
     pullPolicy: Never  # Use local image from Minikube
-    tag: latest
+    tag: v3
 
   # Service configuration
   service:
@@ -146,7 +146,7 @@ frontend:
   image:
     repository: todo-frontend
     pullPolicy: Never  # Use local image from Minikube
-    tag: latest
+    tag: v2
 
   # Service configuration
   service:
@@ -187,7 +187,7 @@ frontend:
   # Environment variables
   env:
     - name: NEXT_PUBLIC_API_URL
-      value: "http://todo-app-backend:8000"
+      value: "http://localhost:8000"
     - name: NODE_ENV
       value: "production"
 
