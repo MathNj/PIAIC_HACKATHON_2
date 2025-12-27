@@ -60,6 +60,18 @@ Phase 5: Event-Driven Architecture with Dapr, Kafka, and Cloud Deployment 🚧 *
 - [x] Task completion toggle endpoint
 - [x] **Deployed to Vercel**: https://backend-pl7shcy6m-mathnjs-projects.vercel.app
 
+**Email Notifications Enhancement** (Feature 009):
+**Spec**: `specs/009-email-notifications/spec.md`
+- [ ] Email service module with Gmail SMTP
+- [ ] Task creation notifications
+- [ ] Task update notifications
+- [ ] Task deletion notifications
+- [ ] Task completion notifications
+- [ ] Login security alerts
+- [ ] HTML email templates
+- [ ] Kubernetes secrets configuration
+- [ ] Error handling and logging
+
 ---
 
 ### ✅ Phase 3 - AI Chat Agent (Completed & Deployed to Vercel)
